@@ -43,25 +43,6 @@
             background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
             color: white;
         }
-
-        .scroll-smooth {
-            scrollbar-width: thin;
-            scrollbar-color: #8b5cf6 #f3f4f6;
-        }
-
-        .scroll-smooth::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .scroll-smooth::-webkit-scrollbar-track {
-            background: #f3f4f6;
-            border-radius: 4px;
-        }
-
-        .scroll-smooth::-webkit-scrollbar-thumb {
-            background: #8b5cf6;
-            border-radius: 4px;
-        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -73,7 +54,7 @@
                     <h1 class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                         🎰 Sistema Sorteio
                     </h1>
-                    <p class="text-sm text-gray-600 mt-1">Versão 2.0 - PostgreSQL</p>
+                    <p class="text-sm text-gray-600 mt-1">Versão 1.0</p>
                 </div>
 
                 <nav class="p-4">
@@ -129,10 +110,6 @@
                             <p class="text-gray-600 mt-1">Visão geral do sistema de sorteios</p>
                         </div>
                         <div class="flex items-center space-x-4">
-                            <div class="flex items-center space-x-2 text-sm text-gray-600">
-                                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                                <span>PostgreSQL</span>
-                            </div>
                             <button onclick="atualizarDados()"
                                 class="bg-purple-600 text-white px-6 py-3 rounded-xl hover:bg-purple-700 transition flex items-center space-x-2">
                                 <span>🔄</span>
@@ -195,20 +172,20 @@
                         <div class="bg-white rounded-2xl shadow-xl p-6 fade-in">
                             <h3 class="text-xl font-bold text-gray-800 mb-4">📊 Distribuição de Prêmios</h3>
                             <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4">
-                                <canvas id="graficoDistribuicao" class="w-full" style="max-height: 300px;"></canvas>
+                                <canvas id="graficoDistribuicao" class="w-full" style="max-height: 200px;"></canvas>
                             </div>
                         </div>
                     </div>
 
                     <!-- Ganhadores -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                        <!-- Últimos Ganhadores -->
+                        <!-- Ganhadores da Roleta -->
                         <div class="bg-white rounded-2xl shadow-xl p-6 fade-in">
                             <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-xl font-bold text-gray-800">🏆 Últimos Ganhadores</h3>
-                                <a href="/historico.html" class="text-purple-600 text-sm font-semibold hover:underline">Ver todos →</a>
+                                <h3 class="text-xl font-bold text-gray-800">🎡 Ganhadores da Roleta</h3>
+                                <a href="/admin/historico.html" class="text-purple-600 text-sm font-semibold hover:underline">Ver todos →</a>
                             </div>
-                            <div id="ultimosGanhadores" class="space-y-3 max-h-96 overflow-y-auto scroll-smooth">
+                            <div id="ganhadoresRoleta" class="space-y-3 max-h-96 overflow-y-auto">
                                 <div class="text-center text-gray-500 py-8">
                                     <div class="text-4xl mb-2">⏳</div>
                                     <p>Carregando...</p>
@@ -216,13 +193,29 @@
                             </div>
                         </div>
 
-                        <!-- Prêmios Disponíveis -->
+                        <!-- Ganhadores da Raspadinha -->
+                        <div class="bg-white rounded-2xl shadow-xl p-6 fade-in">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-bold text-gray-800">🎰 Ganhadores da Raspadinha</h3>
+                                <a href="/admin/historico.html" class="text-purple-600 text-sm font-semibold hover:underline">Ver todos →</a>
+                            </div>
+                            <div id="ganhadoresRaspadinha" class="space-y-3 max-h-96 overflow-y-auto">
+                                <div class="text-center text-gray-500 py-8">
+                                    <div class="text-4xl mb-2">⏳</div>
+                                    <p>Carregando...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Prêmios Disponíveis -->
+                    <div class="grid grid-cols-1">
                         <div class="bg-white rounded-2xl shadow-xl p-6 fade-in">
                             <div class="flex items-center justify-between mb-4">
                                 <h3 class="text-xl font-bold text-gray-800">🎁 Prêmios Disponíveis</h3>
-                                <a href="/paineladm.html" class="text-purple-600 text-sm font-semibold hover:underline">Gerenciar →</a>
+                                <a href="/admin/paineladm.html" class="text-purple-600 text-sm font-semibold hover:underline">Gerenciar →</a>
                             </div>
-                            <div id="premiosDisponiveis" class="space-y-3 max-h-96 overflow-y-auto scroll-smooth">
+                            <div id="premiosDisponiveis" class="space-y-3 max-h-96 overflow-y-auto">
                                 <div class="text-center text-gray-500 py-8">
                                     <div class="text-4xl mb-2">⏳</div>
                                     <p>Carregando...</p>
@@ -235,20 +228,15 @@
         </div>
     </div>
 
+    <!-- Config DEVE vir ANTES do script principal -->
+    <script src="/config.js"></script>
+    
     <script>
         let chartPremios;
-        const API_BASE = window.location.origin;
 
-        // ============================================
-        // UTILITÁRIOS
-        // ============================================
-        
+        // Formatar data relativa
         function formatarDataRelativa(dataString) {
-            if (!dataString) return 'Data não disponível';
-            
             const data = new Date(dataString);
-            if (isNaN(data.getTime())) return 'Data inválida';
-            
             const agora = new Date();
             const diff = Math.floor((agora - data) / 1000);
 
@@ -264,100 +252,47 @@
             return `${dia}/${mes} ${hora}:${min}`;
         }
 
-        async function fetchAPI(endpoint) {
-            try {
-                const response = await fetch(`${API_BASE}${endpoint}`, {
-                    credentials: 'include',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                return await response.json();
-            } catch (error) {
-                console.error(`❌ Erro ao buscar ${endpoint}:`, error);
-                throw error;
-            }
-        }
-
-        // ============================================
-        // CARREGAR DASHBOARD
-        // ============================================
-        
+        // Carregar Dashboard
         async function carregarDashboard() {
             console.log('🔄 Carregando dashboard...');
             
             try {
-                const data = await fetchAPI('/api/dashboard');
+                // ✅ CONFIG.fetch já retorna o JSON diretamente
+                const data = await CONFIG.fetch(CONFIG.API.DASHBOARD);
                 console.log('✅ Dados recebidos:', data);
                 
+                // Validar se recebeu dados
                 if (!data || typeof data !== 'object') {
                     throw new Error('Dados inválidos recebidos da API');
                 }
                 
-                // Atualizar estatísticas principais
+                // Atualizar estatísticas
                 document.getElementById('totalParticipantes').textContent = data.total_participantes || 0;
                 document.getElementById('premiosDistribuidos').textContent = data.premios_distribuidos || 0;
                 document.getElementById('sorteiosRealizados').textContent = data.sorteios_realizados || 0;
-                
-                // Calcular taxa de conversão
-                const taxa = data.total_participantes > 0 
-                    ? Math.round((data.premios_distribuidos / data.total_participantes) * 100) 
-                    : 0;
-                document.getElementById('taxaConversao').textContent = taxa + '%';
+                document.getElementById('taxaConversao').textContent = (data.taxa_conversao || 0) + '%';
                 
                 // Atualizar trends
-                document.getElementById('trendParticipantes').textContent = `Total de cadastros`;
-                document.getElementById('trendPremios').textContent = `Total distribuído`;
-                document.getElementById('trendSorteios').textContent = `Total realizado`;
-                document.getElementById('trendConversao').textContent = `Relação prêmios/participantes`;
+                document.getElementById('trendParticipantes').textContent = `↑ +${data.participantes_semana || 0} esta semana`;
+                document.getElementById('trendPremios').textContent = `↑ +${data.premios_distribuidos || 0} total`;
+                document.getElementById('trendSorteios').textContent = `↑ +${data.participantes_mes || 0} este mês`;
+                document.getElementById('trendConversao').textContent = `↑ +${data.crescimento_semana || 0}% esta semana`;
                 
-                // Carregar outras seções
-                await Promise.all([
-                    carregarUltimosGanhadores(data.ultimos_ganhadores || []),
-                    carregarPremiosDisponiveis(),
-                    carregarGraficoDistribuicao()
-                ]);
+                // Carregar seções
+                carregarPremiosMaisSorteados(data.premios_mais_sorteados || []);
+                carregarGanhadoresRoleta(data.ganhadores_roleta || []);
+                carregarGanhadoresRaspadinha(data.ganhadores_raspadinha || []);
+                carregarPremiosDisponiveis(data.premios_disponiveis || []);
                 
             } catch (error) {
                 console.error('❌ Erro ao carregar dashboard:', error);
+                console.error('Stack trace:', error.stack);
                 mostrarErro();
             }
         }
 
-        // ============================================
-        // GRÁFICO DE DISTRIBUIÇÃO
-        // ============================================
-        
-        async function carregarGraficoDistribuicao() {
-            try {
-                const historico = await fetchAPI('/api/historico-sorteios?limit=100&premio_ganho=true');
-                
-                // Agrupar por prêmio
-                const premiosCont = {};
-                historico.forEach(h => {
-                    const nome = h.premio_nome || 'Sem nome';
-                    premiosCont[nome] = (premiosCont[nome] || 0) + 1;
-                });
-                
-                // Converter para array e ordenar
-                const premiosArray = Object.entries(premiosCont)
-                    .map(([nome, quantidade]) => ({ premio_nome: nome, quantidade }))
-                    .sort((a, b) => b.quantidade - a.quantidade)
-                    .slice(0, 5); // Top 5
-                
-                renderizarGrafico(premiosArray);
-            } catch (error) {
-                console.error('❌ Erro ao carregar gráfico:', error);
-            }
-        }
-
-        function renderizarGrafico(premios) {
+        // Carregar prêmios mais sorteados
+        function carregarPremiosMaisSorteados(premios) {
             const canvasElement = document.getElementById('graficoDistribuicao');
             
             if (!canvasElement) {
@@ -427,19 +362,8 @@
                             legend: {
                                 position: 'bottom',
                                 labels: {
-                                    padding: 15,
-                                    font: { size: 12 }
-                                }
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const label = context.label || '';
-                                        const value = context.parsed || 0;
-                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                        const percentage = ((value / total) * 100).toFixed(1);
-                                        return `${label}: ${value} (${percentage}%)`;
-                                    }
+                                    padding: 10,
+                                    font: { size: 11 }
                                 }
                             }
                         }
@@ -450,121 +374,102 @@
             }
         }
 
-        // ============================================
-        // ÚLTIMOS GANHADORES
-        // ============================================
-        
-        async function carregarUltimosGanhadores(ganhadores = null) {
-            const container = document.getElementById('ultimosGanhadores');
+        // Carregar ganhadores da roleta
+        function carregarGanhadoresRoleta(ganhadores) {
+            const container = document.getElementById('ganhadoresRoleta');
             
-            try {
-                // Se não recebeu ganhadores, buscar da API
-                if (!ganhadores) {
-                    const data = await fetchAPI('/api/historico-sorteios?limit=10&premio_ganho=true');
-                    ganhadores = data || [];
-                }
-                
-                if (ganhadores.length === 0) {
-                    container.innerHTML = `
-                        <div class="text-center text-gray-500 py-8">
-                            <div class="text-4xl mb-2">🏆</div>
-                            <p>Nenhum ganhador ainda</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                const getCorTipo = (tipo) => {
-                    if (tipo === 'roleta') return 'from-blue-50 to-indigo-50';
-                    if (tipo === 'raspadinha') return 'from-purple-50 to-pink-50';
-                    return 'from-green-50 to-emerald-50';
-                };
-
-                const getIconeTipo = (tipo) => {
-                    if (tipo === 'roleta') return '🎡';
-                    if (tipo === 'raspadinha') return '🎰';
-                    return '🎁';
-                };
-                
-                container.innerHTML = ganhadores.map(g => `
-                    <div class="flex items-center justify-between p-3 bg-gradient-to-r ${getCorTipo(g.tipo_sorteio)} rounded-xl hover:shadow-md transition">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
-                                ${(g.nome || 'U').charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                                <p class="font-semibold text-gray-800">${g.nome || 'Usuário'}</p>
-                                <p class="text-sm text-gray-600">${getIconeTipo(g.tipo_sorteio)} ${g.premio_nome || 'Prêmio'}</p>
-                            </div>
-                        </div>
-                        <span class="text-xs text-gray-500">${formatarDataRelativa(g.data_sorteio)}</span>
-                    </div>
-                `).join('');
-            } catch (error) {
-                console.error('❌ Erro ao carregar ganhadores:', error);
+            if (ganhadores.length === 0) {
                 container.innerHTML = `
-                    <div class="text-center text-red-500 py-8">
-                        <div class="text-4xl mb-2">⚠️</div>
-                        <p>Erro ao carregar dados</p>
+                    <div class="text-center text-gray-500 py-8">
+                        <div class="text-4xl mb-2">🎡</div>
+                        <p>Nenhum ganhador da roleta ainda</p>
                     </div>
                 `;
+                return;
             }
+            
+            container.innerHTML = ganhadores.slice(0, 10).map(g => `
+                <div class="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl hover:shadow-md transition">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold">
+                            ${g.nome.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-800">${g.nome}</p>
+                            <p class="text-sm text-gray-600">🎁 ${g.premio_nome}</p>
+                        </div>
+                    </div>
+                    <span class="text-xs text-gray-500">${formatarDataRelativa(g.data_sorteio)}</span>
+                </div>
+            `).join('');
         }
 
-        // ============================================
-        // PRÊMIOS DISPONÍVEIS
-        // ============================================
-        
-        async function carregarPremiosDisponiveis() {
+        // Carregar ganhadores da raspadinha
+        function carregarGanhadoresRaspadinha(ganhadores) {
+            const container = document.getElementById('ganhadoresRaspadinha');
+            
+            if (ganhadores.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <div class="text-4xl mb-2">🎰</div>
+                        <p>Nenhum ganhador da raspadinha</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = ganhadores.slice(0, 10).map(g => `
+                <div class="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl hover:shadow-md transition">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
+                            ${g.nome.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-800">${g.nome}</p>
+                            <p class="text-sm text-gray-600">🎁 ${g.premio_nome}</p>
+                        </div>
+                    </div>
+                    <span class="text-xs text-gray-500">${formatarDataRelativa(g.data_sorteio)}</span>
+                </div>
+            `).join('');
+        }
+
+        // Carregar prêmios disponíveis
+        function carregarPremiosDisponiveis(premios) {
             const container = document.getElementById('premiosDisponiveis');
             
-            try {
-                const premios = await fetchAPI('/api/premios');
-                
-                if (premios.length === 0) {
-                    container.innerHTML = `
-                        <div class="text-center text-gray-500 py-8">
-                            <div class="text-4xl mb-2">🎁</div>
-                            <p>Nenhum prêmio cadastrado</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                container.innerHTML = premios.slice(0, 8).map(p => `
-                    <div class="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl hover:shadow-md transition">
-                        <div class="flex items-center space-x-3">
-                            <span class="text-2xl">${p.icone || '🎁'}</span>
-                            <div>
-                                <p class="font-semibold text-gray-800">${p.nome}</p>
-                                <p class="text-sm text-gray-600">
-                                    ${p.tipo === 'ambos' ? 'Sorteio & Raspadinha' : 
-                                      p.tipo === 'sorteio' ? 'Apenas Sorteio' : 'Apenas Raspadinha'}
-                                </p>
-                            </div>
-                        </div>
-                        <span class="px-3 py-1 rounded-full text-xs font-semibold ${p.ativo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
-                            ${p.ativo ? '✓ Ativo' : '✗ Inativo'}
-                        </span>
-                    </div>
-                `).join('');
-            } catch (error) {
-                console.error('❌ Erro ao carregar prêmios:', error);
+            if (premios.length === 0) {
                 container.innerHTML = `
-                    <div class="text-center text-red-500 py-8">
-                        <div class="text-4xl mb-2">⚠️</div>
-                        <p>Erro ao carregar dados</p>
+                    <div class="text-center text-gray-500 py-8">
+                        <div class="text-4xl mb-2">🎁</div>
+                        <p>Nenhum prêmio cadastrado</p>
                     </div>
                 `;
+                return;
             }
+            
+            container.innerHTML = premios.slice(0, 8).map(p => `
+                <div class="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl hover:shadow-md transition">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-2xl">${p.icone || '🎁'}</span>
+                        <div>
+                            <p class="font-semibold text-gray-800">${p.nome}</p>
+                            <p class="text-sm text-gray-600">
+                                ${p.tipo === 'ambos' ? 'Sorteio & Raspadinha' : 
+                                  p.tipo === 'sorteio' ? 'Apenas Sorteio' : 'Apenas Raspadinha'}
+                            </p>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold ${p.ativo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                        ${p.ativo ? '✓ Ativo' : '✗ Inativo'}
+                    </span>
+                </div>
+            `).join('');
         }
 
-        // ============================================
-        // FUNÇÕES AUXILIARES
-        // ============================================
-        
+        // Mostrar erro
         function mostrarErro() {
-            const ids = ['ultimosGanhadores', 'premiosDisponiveis'];
+            const ids = ['ganhadoresRoleta', 'ganhadoresRaspadinha', 'premiosDisponiveis'];
             ids.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
@@ -578,34 +483,24 @@
             });
         }
 
+        // Atualizar dados
         async function atualizarDados() {
-            console.log('🔄 Atualizando dados...');
             await carregarDashboard();
         }
 
+        // Inicialização
+        window.addEventListener('load', () => {
+            console.log('🚀 Dashboard inicializado');
+            carregarDashboard();
+            setInterval(carregarDashboard, 60000); // Auto-refresh a cada 1 minuto
+        });
+        
         function logout() {
             if (confirm('❓ Deseja realmente sair?')) {
                 console.log('👋 Fazendo logout...');
                 window.location.href = '/logout';
             }
         }
-
-        // ============================================
-        // INICIALIZAÇÃO
-        // ============================================
-        
-        window.addEventListener('load', () => {
-            console.log('🚀 Dashboard PostgreSQL inicializado');
-            carregarDashboard();
-            
-            // Auto-refresh a cada 60 segundos
-            setInterval(carregarDashboard, 60000);
-        });
-
-        // Detectar erros globais
-        window.addEventListener('error', (e) => {
-            console.error('❌ Erro global:', e.message);
-        });
     </script>
 </body>
 </html>

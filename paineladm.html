@@ -2131,11 +2131,12 @@ function renderizarParticipantes() {
 
                    // Abrir modal de novo sorteiov
         // Abrir modal de novo sorteio
+// 1️⃣ FUNÇÃO: abrirModalNovoSorteio (linha ~2779)
 async function abrirModalNovoSorteio() {
     try {
         console.log('🔄 Carregando prêmios para NOVO SORTEIO...');
 
-        // 👉 AGORA BUSCA SEMPRE /api/premios
+        // 👉 BUSCAR TODOS OS PRÊMIOS (não existe PREMIOS_ATIVOS no config)
         const response = await fetch(CONFIG.buildURL(CONFIG.API.PREMIOS));
 
         if (!response.ok) {
@@ -2533,13 +2534,12 @@ function adicionarHorarioPremioRaspadinha() {
         }
 
         
-        // Adicionar horário de prêmio para raspadinha
-        // Abrir modal de nova raspadinha
+     // 2️⃣ FUNÇÃO: abrirModalNovaRaspadinha (linha ~2936)
 async function abrirModalNovaRaspadinha() {
     try {
         console.log('🔄 Carregando prêmios para NOVA RASPADINHA...');
 
-        // 👉 AGORA BUSCA /api/premios (não /premios-ativos)
+        // 👉 BUSCAR TODOS OS PRÊMIOS (não existe PREMIOS_ATIVOS no config)
         const response = await fetch(CONFIG.buildURL(CONFIG.API.PREMIOS));
 
         if (!response.ok) {
@@ -2591,90 +2591,6 @@ async function abrirModalNovaRaspadinha() {
     }
 }
 
-
-        // Remover horário de raspadinha
-        function removerHorarioPremioRaspadinha(id) {
-            document.getElementById(`horarioRaspadinha-${id}`)?.remove();
-        }
-
-        // Salvar raspadinha agendada
-        async function salvarRaspadinhaAgendada(event) {
-            event.preventDefault();
-            
-            const dataRaspadinha = document.getElementById('dataRaspadinha').value;
-            const horaInicioRaspadinha = document.getElementById('horaInicioRaspadinha').value;
-            const horaFimRaspadinha = document.getElementById('horaFimRaspadinha').value;
-            
-            if (!dataRaspadinha || !horaInicioRaspadinha || !horaFimRaspadinha) {
-                alert('❌ Preencha data, hora de início e hora de fim!');
-                return;
-            }
-            
-            if (horaFimRaspadinha <= horaInicioRaspadinha) {
-                alert('❌ A hora de fim deve ser maior que a hora de início!');
-                return;
-            }
-            
-            // Coletar horários
-            const premiosDistribuicao = [];
-            const container = document.getElementById('listaHorariosPremiosRaspadinha');
-            const horarios = container.querySelectorAll('[id^="horarioRaspadinha-"]');
-            
-            for (const horario of horarios) {
-                const id = horario.id.split('-')[1];
-                const horaInicio = document.getElementById(`horaInicioRaspadinha-${id}`)?.value;
-                const horaFim = document.getElementById(`horaFimRaspadinha-${id}`)?.value;
-                const premioId = document.getElementById(`premioRaspadinha-${id}`)?.value;
-                
-                if (!horaInicio || !horaFim || !premioId) {
-                    alert('❌ Preencha todos os campos!');
-                    return;
-                }
-                
-                if (horaInicio < horaInicioRaspadinha || horaFim > horaFimRaspadinha) {
-                    alert(`❌ Os horários dos prêmios devem estar entre ${horaInicioRaspadinha} e ${horaFimRaspadinha}!`);
-                    return;
-                }
-                
-                const premio = premiosRaspadinha.find(p => p.id == premioId);
-                premiosDistribuicao.push({
-                    horario_inicio: horaInicio,
-                    horario_fim: horaFim,
-                    premio_id: premioId,
-                    premio_nome: premio.nome
-                });
-            }
-            
-            if (premiosDistribuicao.length === 0) {
-                alert('❌ Adicione pelo menos um horário!');
-                return;
-            }
-            
-            try {
-                const response = await fetch(CONFIG.buildURL(CONFIG.API.RASPADINHAS_AGENDADAS), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        data_raspadinha: dataRaspadinha,
-                        hora_inicio: horaInicioRaspadinha,
-                        hora_fim: horaFimRaspadinha,
-                        premios_distribuicao: premiosDistribuicao
-                    })
-                });
-                
-                if (response.ok) {
-                    alert('✅ Raspadinha agendada com sucesso!');
-                    fecharModal('modal-nova-raspadinha');
-                    await carregarRaspadinhasAgendadas();
-                } else {
-                    const erro = await response.json();
-                    alert('❌ Erro: ' + (erro.erro || 'Erro ao agendar raspadinha'));
-                }
-            } catch (error) {
-                console.error('Erro:', error);
-                alert('❌ Erro ao salvar raspadinha');
-            }
-        }
 
         // Cancelar raspadinha
         async function cancelarRaspadinha(id) {

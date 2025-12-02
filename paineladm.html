@@ -2485,51 +2485,7 @@ async function abrirModalNovoSorteio() {
             }).join('');
         }
 
-        // Abrir modal de nova raspadinha
-        async function abrirModalNovaRaspadinha() {
-            try {
-                // Carregar prêmios de RASPADINHA (tipo = 'raspadinha' ou 'ambos')
-                const response = await fetch(CONFIG.buildURL(CONFIG.API.PREMIOS_ATIVOS));
-                const data = await response.json();
-                const todosPremios = data.premios || [];
-                
-                // Filtrar apenas prêmios de raspadinha
-                premiosRaspadinha = todosPremios.filter(p => 
-                    p.tipo === 'raspadinha' || p.tipo === 'ambos'
-                );
-                
-                console.log('✅ Prêmios de raspadinha carregados:', premiosRaspadinha);
-                
-                if (premiosRaspadinha.length === 0) {
-                    alert('⚠️ Nenhum prêmio de raspadinha cadastrado! Cadastre prêmios do tipo "Raspadinha" ou "Ambos" primeiro.');
-                    return;
-                }
-                
-                // Mostrar prêmios disponíveis
-                const div = document.getElementById('premiosDisponiveisRaspadinha');
-                div.innerHTML = premiosRaspadinha.map(p => 
-                    `<span style="display:inline-block;background:#fff3e0;color:#f57c00;padding:4px 10px;border-radius:8px;margin:3px;">🎰 ${p.nome}</span>`
-                ).join('');
-                
-                // Limpar formulário
-                document.getElementById('dataRaspadinha').value = '';
-                document.getElementById('horaInicioRaspadinha').value = '';
-                document.getElementById('horaFimRaspadinha').value = '';
-                
-                // Limpar e adicionar primeiro horário
-                document.getElementById('listaHorariosPremiosRaspadinha').innerHTML = '';
-                contadorHorariosRaspadinha = 0;
-                adicionarHorarioPremioRaspadinha();
-                
-                // Abrir modal
-                abrirModal('modal-nova-raspadinha');
-                
-            } catch (error) {
-                console.error('❌ Erro ao carregar prêmios:', error);
-                alert('❌ Erro ao carregar prêmios de raspadinha.');
-            }
-        }
-
+        
         // Adicionar horário de prêmio para raspadinha
         // Abrir modal de nova raspadinha
 async function abrirModalNovaRaspadinha() {

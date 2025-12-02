@@ -2130,49 +2130,63 @@ function renderizarParticipantes() {
         }
 
                    // Abrir modal de novo sorteiov
-        async function abrirModalNovoSorteio() {
-            try {
-                // Carregar prêmios ATIVOS da API
-                const response = await fetch(CONFIG.buildURL(CONFIG.API.PREMIOS_ATIVOS));
-                const data = await response.json();
-                const todosPremios = data.premios || [];
-                
-                // ⭐ FILTRAR apenas prêmios de ROLETA (tipo = 'roleta' ou 'ambos')
-                premiosDisponiveis = todosPremios.filter(p => 
-                    p.tipo === 'roleta' || p.tipo === 'ambos'
-                );
-                
-                console.log('✅ Prêmios de ROLETA carregados:', premiosDisponiveis);
-                
-                if (premiosDisponiveis.length === 0) {
-                    alert('⚠️ Nenhum prêmio de roleta cadastrado! Cadastre prêmios do tipo "Roleta" ou "Ambos" primeiro.');
-                    return;
-                }
-                
-                // Mostrar prêmios disponíveis no card informativo
-                const div = document.getElementById('premiosDisponiveis');
-                div.innerHTML = premiosDisponiveis.map(p => 
-                    `<span style="display:inline-block;background:#e3f2fd;color:#1976d2;padding:4px 10px;border-radius:8px;margin:3px;">🎡 ${p.nome}</span>`
-                ).join('');
-                
-                // Limpar formulário
-                document.getElementById('dataSorteio').value = '';
-                document.getElementById('horaInicioSorteio').value = '';
-                document.getElementById('horaFimSorteio').value = '';
-                
-                // Limpar e adicionar primeiro horário
-                document.getElementById('listaHorariosPremios').innerHTML = '';
-                contadorHorarios = 0;
-                adicionarHorarioPremio();
-                
-                // Abrir modal
-                abrirModal('modal-novo-sorteio');
-                
-            } catch (error) {
-                console.error('❌ Erro ao carregar prêmios:', error);
-                alert('❌ Erro ao carregar prêmios. Verifique se há prêmios cadastrados.');
-            }
+        // Abrir modal de novo sorteio
+async function abrirModalNovoSorteio() {
+    try {
+        console.log('🔄 Carregando prêmios para NOVO SORTEIO...');
+
+        // 👉 AGORA BUSCA SEMPRE /api/premios
+        const response = await fetch(CONFIG.buildURL(CONFIG.API.PREMIOS));
+
+        if (!response.ok) {
+            const texto = await response.text();
+            console.error('❌ Erro HTTP ao carregar prêmios:', response.status, texto);
+            throw new Error('Erro HTTP ' + response.status);
         }
+
+        const data = await response.json();
+        console.log('📦 Resposta bruta da API (sorteio):', data);
+
+        // Normaliza: aceita tanto [ ... ] quanto { premios: [ ... ] }
+        const todosPremios = Array.isArray(data) ? data : (data.premios || []);
+
+        // ⭐ FILTRAR apenas prêmios ATIVOS de ROLETA (tipo = 'roleta' ou 'ambos')
+        premiosDisponiveis = todosPremios.filter(p =>
+            p.ativo && (p.tipo === 'roleta' || p.tipo === 'ambos')
+        );
+
+        console.log('✅ Prêmios de ROLETA carregados:', premiosDisponiveis);
+
+        if (premiosDisponiveis.length === 0) {
+            alert('⚠️ Nenhum prêmio de roleta ATIVO cadastrado! Cadastre prêmios do tipo "Roleta" ou "Ambos" primeiro.');
+            return;
+        }
+
+        // Mostrar prêmios disponíveis no card informativo
+        const div = document.getElementById('premiosDisponiveis');
+        div.innerHTML = premiosDisponiveis.map(p =>
+            `<span style="display:inline-block;background:#e3f2fd;color:#1976d2;padding:4px 10px;border-radius:8px;margin:3px;">🎡 ${p.nome}</span>`
+        ).join('');
+
+        // Limpar formulário
+        document.getElementById('dataSorteio').value = '';
+        document.getElementById('horaInicioSorteio').value = '';
+        document.getElementById('horaFimSorteio').value = '';
+
+        // Limpar e adicionar primeiro horário
+        document.getElementById('listaHorariosPremios').innerHTML = '';
+        contadorHorarios = 0;
+        adicionarHorarioPremio();
+
+        // Abrir modal
+        abrirModal('modal-novo-sorteio');
+
+    } catch (error) {
+        console.error('❌ Erro ao carregar prêmios para sorteio:', error);
+        alert('❌ Erro ao carregar prêmios. Verifique se há prêmios cadastrados.');
+    }
+}
+
 
         // Adicionar horário de prêmio
         function adicionarHorarioPremio() {

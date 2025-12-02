@@ -2227,6 +2227,53 @@ async function abrirModalNovoSorteio() {
             container.appendChild(div);
         }
 
+            // ============================================
+// FUNÇÃO QUE ESTÁ FALTANDO NO SEU CÓDIGO
+// Adicione ANTES da função removerHorarioPremioRaspadinha()
+// ============================================
+
+function adicionarHorarioPremioRaspadinha() {
+    const id = contadorHorariosRaspadinha++;
+    const container = document.getElementById('listaHorariosPremiosRaspadinha');
+    
+    if (!container) {
+        console.error('❌ Container não encontrado!');
+        return;
+    }
+    
+    const div = document.createElement('div');
+    div.id = `horarioRaspadinha-${id}`;
+    div.style.cssText = 'border: 2px solid #f57c00; border-radius: 10px; padding: 15px; margin-bottom: 15px; background: #fff3e0;';
+    div.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <strong style="color: #f57c00;">🎰 Horário #${id + 1}</strong>
+            <button type="button" class="btn btn-danger btn-small" onclick="removerHorarioPremioRaspadinha(${id})">
+                🗑️
+            </button>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #f57c00;">Hora Início:</label>
+                <input type="time" id="horaInicioRaspadinha-${id}" required style="width: 100%; padding: 8px; border: 2px solid #f57c00; border-radius: 8px;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #f57c00;">Hora Fim:</label>
+                <input type="time" id="horaFimRaspadinha-${id}" required style="width: 100%; padding: 8px; border: 2px solid #f57c00; border-radius: 8px;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #f57c00;">Prêmio:</label>
+                <select id="premioRaspadinha-${id}" required style="width: 100%; padding: 8px; border: 2px solid #f57c00; border-radius: 8px;">
+                    <option value="">Selecione...</option>
+                    ${premiosRaspadinha.map(p => `<option value="${p.id}">🎰 ${p.nome}</option>`).join('')}
+                </select>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(div);
+    console.log(`✅ Horário de raspadinha #${id + 1} adicionado`);
+}
+
         // Remover horário
         function removerHorarioPremio(id) {
             document.getElementById(`horario-${id}`)?.remove();

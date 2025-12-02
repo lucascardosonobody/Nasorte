@@ -2531,41 +2531,63 @@ async function abrirModalNovoSorteio() {
         }
 
         // Adicionar horário de prêmio para raspadinha
-        function adicionarHorarioPremioRaspadinha() {
-            const id = contadorHorariosRaspadinha++;
-            const container = document.getElementById('listaHorariosPremiosRaspadinha');
-            
-            const div = document.createElement('div');
-            div.id = `horarioRaspadinha-${id}`;
-            div.style.cssText = 'border: 2px solid #ddd; border-radius: 10px; padding: 15px; margin-bottom: 15px; background: white;';
-            div.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <strong>Horário #${id + 1}</strong>
-                    <button type="button" class="btn btn-danger btn-small" onclick="removerHorarioPremioRaspadinha(${id})">
-                        🗑️
-                    </button>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
-                    <div>
-                        <label style="display: block; margin-bottom: 5px; font-size: 0.9em;">Hora Início:</label>
-                        <input type="time" id="horaInicioRaspadinha-${id}" required style="width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 8px;">
-                    </div>
-                    <div>
-                        <label style="display: block; margin-bottom: 5px; font-size: 0.9em;">Hora Fim:</label>
-                        <input type="time" id="horaFimRaspadinha-${id}" required style="width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 8px;">
-                    </div>
-                    <div>
-                        <label style="display: block; margin-bottom: 5px; font-size: 0.9em;">Prêmio:</label>
-                        <select id="premioRaspadinha-${id}" required style="width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 8px;">
-                            <option value="">Selecione...</option>
-                            ${premiosRaspadinha.map(p => `<option value="${p.id}">🎰 ${p.nome}</option>`).join('')}
-                        </select>
-                    </div>
-                </div>
-            `;
-            
-            container.appendChild(div);
+        // Abrir modal de nova raspadinha
+async function abrirModalNovaRaspadinha() {
+    try {
+        console.log('🔄 Carregando prêmios para NOVA RASPADINHA...');
+
+        // 👉 AGORA BUSCA /api/premios (não /premios-ativos)
+        const response = await fetch(CONFIG.buildURL(CONFIG.API.PREMIOS));
+
+        if (!response.ok) {
+            const texto = await response.text();
+            console.error('❌ Erro HTTP ao carregar prêmios (raspadinha):', response.status, texto);
+            throw new Error('Erro HTTP ' + response.status);
         }
+
+        const data = await response.json();
+        console.log('📦 Resposta bruta da API (raspadinha):', data);
+
+        // Normaliza: aceita [ ... ] ou { premios: [ ... ] }
+        const todosPremios = Array.isArray(data) ? data : (data.premios || []);
+
+        // Filtrar apenas prêmios ATIVOS de raspadinha
+        premiosRaspadinha = todosPremios.filter(p =>
+            p.ativo && (p.tipo === 'raspadinha' || p.tipo === 'ambos')
+        );
+
+        console.log('✅ Prêmios de raspadinha carregados:', premiosRaspadinha);
+
+        if (premiosRaspadinha.length === 0) {
+            alert('⚠️ Nenhum prêmio de raspadinha ATIVO cadastrado! Cadastre prêmios do tipo "Raspadinha" ou "Ambos" primeiro.');
+            return;
+        }
+
+        // Mostrar prêmios disponíveis
+        const div = document.getElementById('premiosDisponiveisRaspadinha');
+        div.innerHTML = premiosRaspadinha.map(p =>
+            `<span style="display:inline-block;background:#fff3e0;color:#f57c00;padding:4px 10px;border-radius:8px;margin:3px;">🎰 ${p.nome}</span>`
+        ).join('');
+
+        // Limpar formulário
+        document.getElementById('dataRaspadinha').value = '';
+        document.getElementById('horaInicioRaspadinha').value = '';
+        document.getElementById('horaFimRaspadinha').value = '';
+
+        // Limpar e adicionar primeiro horário
+        document.getElementById('listaHorariosPremiosRaspadinha').innerHTML = '';
+        contadorHorariosRaspadinha = 0;
+        adicionarHorarioPremioRaspadinha();
+
+        // Abrir modal
+        abrirModal('modal-nova-raspadinha');
+
+    } catch (error) {
+        console.error('❌ Erro ao carregar prêmios de raspadinha:', error);
+        alert('❌ Erro ao carregar prêmios de raspadinha.');
+    }
+}
+
 
         // Remover horário de raspadinha
         function removerHorarioPremioRaspadinha(id) {

@@ -72,24 +72,9 @@ const CONFIG = {
             PREMIOS_ATIVOS: '/api/premios/ativos',
         
             // ===============================
-            // SORTEIOS (ROLETA)
-            // ===============================
-            SORTEIOS_AGENDADOS: '/api/sorteios-agendados',
-        
-            // ===============================
-            // RASPADINHA
-            // ===============================
-            RASPADINHAS_AGENDADAS: '/api/raspadinhas-agendadas',
-        
-            // ===============================
             // COMANDOS DE SORTEIO
             // ===============================
             ENVIAR_COMANDO: '/api/enviar-comando',
-        
-            // ===============================
-            // STREAM / SSE
-            // ===============================
-            STREAM_COMANDOS: '/api/stream-comandos'
     },
 
 

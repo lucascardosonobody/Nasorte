@@ -60,6 +60,40 @@ const CONFIG = {
 
         // SSE (eventos em tempo real)
         STREAM_COMANDOS: '/api/stream-comandos'
+        API: {
+            // ===============================
+            // PARTICIPANTES
+            // ===============================
+            PARTICIPANTES: '/api/participantes',
+        
+            // ===============================
+            // PRÊMIOS
+            // ===============================
+            PREMIOS: '/api/premios',
+            PREMIOS_ATIVOS: '/api/premios/ativos',
+        
+            // ===============================
+            // SORTEIOS (ROLETA)
+            // ===============================
+            SORTEIOS_AGENDADOS: '/api/sorteios-agendados',
+        
+            // ===============================
+            // RASPADINHA
+            // ===============================
+            RASPADINHAS_AGENDADAS: '/api/raspadinhas-agendadas',
+        
+            // ===============================
+            // COMANDOS DE SORTEIO
+            // ===============================
+            ENVIAR_COMANDO: '/api/enviar-comando',
+        
+            // ===============================
+            // STREAM / SSE
+            // ===============================
+            STREAM_COMANDOS: '/api/stream-comandos'
+        }
+
+        
     },
 
 

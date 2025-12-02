@@ -45,6 +45,22 @@ const CONFIG = {
         return this.DOMAIN;
     },
 
+        // 🧩 ENDPOINTS DA API
+    API: {
+        // Cadastro / login / etc
+        SIGNUP: '/api/signup',
+
+        // Comandos e sorteios
+        VERIFICAR_COMANDO: '/api/verificar-comando',
+        LIMPAR_COMANDO: '/api/limpar-comando',
+        SORTEIOS_AGENDADOS: '/api/sorteios-agendados',
+        PARTICIPANTES_ATIVOS: '/api/participantes-ativos',
+        RASPADINHAS_AGENDADAS: '/api/raspadinhas-agendadas',
+        VERIFICAR_RESULTADO: '/api/verificar-resultado',
+
+        // SSE (eventos em tempo real)
+        STREAM_COMANDOS: '/api/stream-comandos'
+    },
 
 
     // 📁 CAMINHOS DOS ARQUIVOS

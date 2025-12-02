@@ -59,8 +59,7 @@ const CONFIG = {
         VERIFICAR_RESULTADO: '/api/verificar-resultado',
 
         // SSE (eventos em tempo real)
-        STREAM_COMANDOS: '/api/stream-comandos'
-        API: {
+        STREAM_COMANDOS: '/api/stream-comandos',
             // ===============================
             // PARTICIPANTES
             // ===============================
@@ -91,9 +90,6 @@ const CONFIG = {
             // STREAM / SSE
             // ===============================
             STREAM_COMANDOS: '/api/stream-comandos'
-        }
-
-        
     },
 
 

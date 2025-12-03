@@ -2655,7 +2655,6 @@ function adicionarHorarioPremioRaspadinha() {
             }
         }
 
-        // Renderizar raspadinhas (com status ATIVA AGORA e filtros iguais à roleta)
         function renderizarRaspadinhasAgendadas() {
             const tbody = document.getElementById('tabela-raspadinhas-agendadas');
 
@@ -2666,41 +2665,73 @@ function adicionarHorarioPremioRaspadinha() {
                 return;
             }
 
-            // 📅 Data/hora atual em BR (mesma lógica da roleta)
+            // 📅 Data/hora atual em BR
             const agora = new Date();
             const dataHojeBR = agora.toLocaleString('pt-BR', {
                 timeZone: 'America/Sao_Paulo',
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit'
-            }).split('/').reverse().join('-');
+            }).split('/').reverse().join('-'); // yyyy-mm-dd
 
             const horaAtualBR = agora.toLocaleString('pt-BR', {
                 timeZone: 'America/Sao_Paulo',
                 hour: '2-digit',
                 minute: '2-digit',
                 hour12: false
-            });
+            }); // HH:MM
 
-            // 🎯 Filtros (status + data)
-            const filtroStatus = document.getElementById('filtroStatusRaspadinha')?.value || 'todos';
-            const filtroDataInicio = document.getElementById('filtroDataInicioRaspadinha')?.value || '';
-            const filtroDataFim = document.getElementById('filtroDataFimRaspadinha')?.value || '';
+            // 🔧 Helpers para normalizar
+            const normalizarData = (d) => (d || '').substring(0, 10);          // pega só yyyy-mm-dd
+            const normalizarHora = (h) => (h || '').substring(0, 5);           // pega só HH:MM
+            const horaParaNumero = (h) => parseInt(normalizarHora(h).replace(':', ''), 10) || 0;
+
+            const filtroStatus      = document.getElementById('filtroStatusRaspadinha')?.value || 'todos';
+            const filtroDataInicio  = document.getElementById('filtroDataInicioRaspadinha')?.value || '';
+            const filtroDataFim     = document.getElementById('filtroDataFimRaspadinha')?.value || '';
 
             const linhasHTML = raspadinhasAgendadas
                 .filter(r => {
-                    // 🔍 Filtrar por intervalo de datas (se preenchido)
-                    if (filtroDataInicio && r.data_raspadinha < filtroDataInicio) return false;
-                    if (filtroDataFim && r.data_raspadinha > filtroDataFim) return false;
+                    const dataRaspISO = normalizarData(r.data_raspadinha);
+
+                    // filtro por intervalo de datas
+                    if (filtroDataInicio && dataRaspISO < filtroDataInicio) return false;
+                    if (filtroDataFim    && dataRaspISO > filtroDataFim)    return false;
                     return true;
                 })
                 .map(r => {
-                    // Formatando data dd/mm/aaaa (sem fuso)
-                    let dataFormatada = '-';
-                    if (r.data_raspadinha) {
-                        const [ano, mes, dia] = r.data_raspadinha.substring(0, 10).split('-');
-                        dataFormatada = `${dia}/${mes}/${ano}`;
-                    }
+                    const dataRaspISO = normalizarData(r.data_raspadinha);
+                    const dataFormatada = (() => {
+                        if (!dataRaspISO) return '-';
+                        const [ano, mes, dia] = dataRaspISO.split('-');
+                        return `${dia}/${mes}/${ano}`;
+                    })();
+
+                    // normaliza horários gerais
+                    const horaInicio = normalizarHora(r.hora_inicio);
+                    const horaFim    = normalizarHora(r.hora_fim);
+
+                    const horaAtualNum  = horaParaNumero(horaAtualBR);
+                    const horaInicioNum = horaParaNumero(horaInicio);
+                    const horaFimNum    = horaParaNumero(horaFim);
+
+                    // ⏱️ está no horário?
+                    const estaNoHorario =
+                        dataRaspISO === dataHojeBR &&
+                        horaAtualNum >= horaInicioNum &&
+                        horaAtualNum <= horaFimNum;
+
+                    // 🏷️ calcula status “lógico”
+                    const statusCalculado =
+                        r.status === 'cancelado' ? 'cancelado' :
+                        r.status === 'realizado' ? 'realizado' :
+                        estaNoHorario ? 'ativo' : 'pendente';
+
+                    // 🎯 filtro por status (agora incluindo “ativo” de verdade)
+                    if (filtroStatus === 'pendente' && statusCalculado !== 'pendente') return null;
+                    if (filtroStatus === 'realizado' && statusCalculado !== 'realizado') return null;
+                    if (filtroStatus === 'cancelado' && statusCalculado !== 'cancelado') return null;
+                    if (filtroStatus === 'ativo' && statusCalculado !== 'ativo') return null;
 
                     // Parse seguro da distribuição de prêmios
                     let premiosArr = [];
@@ -2715,35 +2746,15 @@ function adicionarHorarioPremioRaspadinha() {
                         premiosArr = [];
                     }
 
-                    // ⏱️ Está no horário desta raspadinha?
-                    const raspadinhaDataISO = r.data_raspadinha;
-                    const estaNoHorario =
-                        raspadinhaDataISO === dataHojeBR &&
-                        horaAtualBR >= r.hora_inicio &&
-                        horaAtualBR <= r.hora_fim;
-
-                    
-                    if (filtroStatus === 'pendente' && r.status !== 'pendente') {
-                        return null;
-                    }
-                    if (filtroStatus === 'realizado' && r.status !== 'realizado') {
-                        return null;
-                    }
-                    if (filtroStatus === 'cancelado' && r.status !== 'cancelado') {
-                        return null;
-                    }
-
                     // 🏷️ Status visual
                     let statusHTML = '';
-                    if (r.status === 'pendente' || r.status === 'ativo') {
-                        if (estaNoHorario) {
-                            statusHTML =
-                                '<span style="background:#dbeafe;color:#1e40af;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">🔵 ATIVA AGORA</span>';
-                        } else {
-                            statusHTML =
-                                '<span style="background:#fef3c7;color:#92400e;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">⏳ Pendente</span>';
-                        }
-                    } else if (r.status === 'realizado') {
+                    if (statusCalculado === 'ativo') {
+                        statusHTML =
+                            '<span style="background:#dbeafe;color:#1e40af;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">🔵 ATIVA AGORA</span>';
+                    } else if (statusCalculado === 'pendente') {
+                        statusHTML =
+                            '<span style="background:#fef3c7;color:#92400e;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">⏳ Pendente</span>';
+                    } else if (statusCalculado === 'realizado') {
                         statusHTML =
                             '<span style="background:#d1fae5;color:#065f46;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">✅ Realizado</span>';
                     } else {
@@ -2751,24 +2762,19 @@ function adicionarHorarioPremioRaspadinha() {
                             '<span style="background:#fee2e2;color:#991b1b;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">❌ Cancelado</span>';
                     }
 
-                    const statusCalculado =
-                        r.status === 'cancelado' ? 'cancelado' :
-                        r.status === 'realizado' ? 'realizado' :
-                        estaNoHorario ? 'ativo' : 'pendente';
-
-
-                    // 🎁 Coluna de prêmios (igual lógica da roleta)
+                    // 🎁 coluna de prêmios
                     let premiosHTML = '';
                     if (estaNoHorario && premiosArr.length > 0) {
                         const premiosAtivos = premiosArr.filter(p => {
-                            return p.horario_inicio <= horaAtualBR && p.horario_fim >= horaAtualBR;
+                            const hi = horaParaNumero(p.horario_inicio);
+                            const hf = horaParaNumero(p.horario_fim);
+                            return horaAtualNum >= hi && horaAtualNum <= hf;
                         });
 
                         if (premiosAtivos.length > 0) {
                             premiosHTML = premiosAtivos
-                                .map(
-                                    p =>
-                                        `<div style="margin:2px 0;">🎁 <strong>${p.premio_nome}</strong> <span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:8px;font-size:11px;">🔵 ATIVO</span></div>`
+                                .map(p =>
+                                    `<div style="margin:2px 0;">🎁 <strong>${p.premio_nome}</strong> <span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:8px;font-size:11px;">🔵 ATIVO</span></div>`
                                 )
                                 .join('');
                         } else {
@@ -2779,7 +2785,7 @@ function adicionarHorarioPremioRaspadinha() {
                         premiosHTML = premiosArr
                             .map(
                                 p =>
-                                    `<div style="margin:2px 0;">🎁 ${p.premio_nome} (${p.horario_inicio}-${p.horario_fim})</div>`
+                                    `<div style="margin:2px 0;">🎁 ${p.premio_nome} (${normalizarHora(p.horario_inicio)}-${normalizarHora(p.horario_fim)})</div>`
                             )
                             .join('');
                     } else {
@@ -2787,15 +2793,12 @@ function adicionarHorarioPremioRaspadinha() {
                             '<span style="color:#999;">Nenhum prêmio configurado</span>';
                     }
 
-                    // 🕒 Coluna de período ativo
                     const periodoHTML = `
-                        🕐 ${r.hora_inicio} até ${r.hora_fim}
+                        🕐 ${horaInicio} até ${horaFim}
                         ${estaNoHorario ? '<br><span style="color:#1e40af;font-weight:700;font-size:13px;">🔵 EM ANDAMENTO</span>' : ''}
                     `;
 
-                    // Botões
-                    const podeCancelar =
-                        r.status === 'pendente' || r.status === 'ativo';
+                    const podeCancelar = statusCalculado === 'pendente' || statusCalculado === 'ativo';
 
                     return `
                         <tr style="${estaNoHorario ? 'background:#f0f9ff;border-left:4px solid #1e40af;' : ''}">
@@ -2814,7 +2817,7 @@ function adicionarHorarioPremioRaspadinha() {
                         </tr>
                     `;
                 })
-                .filter(linha => linha !== null) // remove filtrados pelo status
+                .filter(linha => linha !== null) // remove filtrados
                 .join('');
 
             if (!linhasHTML) {
@@ -2824,6 +2827,7 @@ function adicionarHorarioPremioRaspadinha() {
                 tbody.innerHTML = linhasHTML;
             }
         }
+
 
 
 

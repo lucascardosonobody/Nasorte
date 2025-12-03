@@ -1582,7 +1582,13 @@ function renderizarParticipantes() {
 
         // Salvar novo prêmio
         async function salvarPremio(event) {
-            event.preventDefault();
+            // ⚠️ CRÍTICO: Impedir envio do formulário
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            console.log('🔥 salvarPremio() INICIADA');
             
             const nome = document.getElementById('input-nome-premio').value.trim();
             const tipo = document.getElementById('input-tipo-premio').value;
@@ -1592,13 +1598,13 @@ function renderizarParticipantes() {
 
             // Validação
             if (!nome) {
-                alert('⚠️ Por favor, digite o nome do prêmio!');
-                return;
+                mostrarNotificacao('⚠️ Por favor, digite o nome do prêmio!', 'warning');
+                return false;
             }
 
             if (!tipo) {
-                alert('⚠️ Por favor, selecione o tipo do prêmio!');
-                return;
+                mostrarNotificacao('⚠️ Por favor, selecione o tipo do prêmio!', 'warning');
+                return false;
             }
 
             const dados = {
@@ -1631,6 +1637,9 @@ function renderizarParticipantes() {
                     
                     // Recarregar lista
                     await carregarPremios();
+                    
+                    // Garantir que estamos na aba de prêmios
+                    mudarAba('premios');
                 } else {
                     throw new Error(data.erro || data.error || 'Erro ao cadastrar prêmio');
                 }
@@ -1640,6 +1649,8 @@ function renderizarParticipantes() {
                 console.error('Stack:', error.stack);
                 mostrarNotificacao('❌ Erro ao cadastrar prêmio: ' + error.message, 'error');
             }
+            
+            return false; // ⚠️ IMPEDIR envio do form
         }
 
         // Abrir modal de edição

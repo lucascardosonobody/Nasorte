@@ -1826,7 +1826,7 @@ function mostrarModalChancesAcabaram() {
                                 String(agoraEmSP.getMinutes()).padStart(2, '0');
                 
                 // 🔍 FILTRAR RASPADINHAS ATIVAS
-                const raspadinhasAtivas = raspadinhas.filter(r => {
+                const raspadinhasAtivas = raspadinhasSeguro.filter(r => {
                     return r.data_raspadinha === dataHoje && 
                         (r.status === 'pendente' || r.status === 'ativo') &&
                         r.hora_inicio <= horaAtual && r.hora_fim >= horaAtual;
@@ -2009,26 +2009,42 @@ function mostrarModalChancesAcabaram() {
             }
         }
 
-    // ============================================
-    // CARREGAR MODAL DE PRÊMIOS
-    // ============================================
-    async function carregarModalPremios() {
-        // Abrir o modal primeiro
-        document.getElementById('modal-premios').classList.add('active');
-        
-        // Mostrar loading
-        document.getElementById('lista-meus-premios').innerHTML = '<p style="color: #999;">Carregando...</p>';
-        document.getElementById('lista-premios-disponiveis').innerHTML = '<p style="color: #999;">Carregando...</p>';
-        document.getElementById('lista-outros-ganhadores').innerHTML = '<p style="color: #999;">Carregando...</p>';
-        
-        try {
-            // 🏆 BUSCAR PRÊMIOS QUE EU GANHEI
-            const meuEmail = usuarioDados.email || localStorage.getItem('participante_email');
+        // ============================================
+        // CARREGAR MODAL DE PRÊMIOS
+        // ============================================
+        async function carregarModalPremios() {
+            // Abrir o modal primeiro
+            document.getElementById('modal-premios').classList.add('active');
             
-            const responseHistorico = await fetch(CONFIG.buildURL(CONFIG.API.HISTORICO) + '?premio_ganho=true');
-            const historico = await responseHistorico.json();
+            // Mostrar loading
+            document.getElementById('lista-meus-premios').innerHTML = '<p style="color: #999;">Carregando...</p>';
+            document.getElementById('lista-premios-disponiveis').innerHTML = '<p style="color: #999;">Carregando...</p>';
+            document.getElementById('lista-outros-ganhadores').innerHTML = '<p style="color: #999;">Carregando...</p>';
             
-            const meusPremios = historico.filter(h => {
+            try {
+                // 🏆 BUSCAR PRÊMIOS QUE EU GANHEI
+                const meuEmail = usuarioDados.email || localStorage.getItem('participante_email');
+                
+                const responseHistorico = await fetch(CONFIG.buildURL(CONFIG.API.HISTORICO) + '?premio_ganho=true');
+
+    if (!responseHistorico.ok) {
+        const textoErro = await responseHistorico.text();
+        console.error('Erro HTTP HISTORICO:', responseHistorico.status, textoErro);
+        throw new Error('Erro ao buscar histórico');
+    }
+
+    const contentTypeHistorico = responseHistorico.headers.get('content-type') || '';
+    if (!contentTypeHistorico.includes('application/json')) {
+        const textoErro = await responseHistorico.text();
+        console.error('HISTORICO não retornou JSON:', textoErro);
+        throw new Error('Histórico inválido');
+    }
+
+    const historico = await responseHistorico.json();
+    const historicoSeguro = Array.isArray(historico) ? historico : [];
+
+            
+            const meusPremios = historicoSeguro.filter(h => {
                 return h.email === meuEmail && 
                     h.premio_nome !== 'Não foi dessa vez' &&
                     h.premio_nome !== 'não foi dessa vez' &&
@@ -2055,14 +2071,30 @@ function mostrarModalChancesAcabaram() {
             
             // 🎯 BUSCAR PRÊMIOS DISPONÍVEIS
             const responseRaspadinhas = await fetch(CONFIG.buildURL(CONFIG.API.RASPADINHAS_AGENDADAS));
+
+            if (!responseRaspadinhas.ok) {
+                const textoErro = await responseRaspadinhas.text();
+                console.error('Erro HTTP RASPADINHAS:', responseRaspadinhas.status, textoErro);
+                throw new Error('Erro ao buscar raspadinhas');
+            }
+
+            const contentTypeRasp = responseRaspadinhas.headers.get('content-type') || '';
+            if (!contentTypeRasp.includes('application/json')) {
+                const textoErro = await responseRaspadinhas.text();
+                console.error('RASPADINHAS não retornou JSON:', textoErro);
+                throw new Error('Raspadinhas inválidas');
+            }
+
             const raspadinhas = await responseRaspadinhas.json();
+            const raspadinhasSeguro = Array.isArray(raspadinhas) ? raspadinhas : [];
+
             
             const agora = new Date();
             const agoraEmSP = new Date(agora.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
             const dataHoje = agoraEmSP.toISOString().split('T')[0];
             const horaAtual = String(agoraEmSP.getHours()).padStart(2, '0') + ':' + String(agoraEmSP.getMinutes()).padStart(2, '0');
             
-            const raspadinhasAtivas = raspadinhas.filter(r => {
+            const raspadinhasAtivas = raspadinhasSeguro.filter(r => {
                 return r.data_raspadinha === dataHoje && 
                     (r.status === 'pendente' || r.status === 'ativo') &&
                     r.hora_inicio <= horaAtual && r.hora_fim >= horaAtual;
@@ -2097,7 +2129,7 @@ function mostrarModalChancesAcabaram() {
             document.getElementById('lista-premios-disponiveis').innerHTML = htmlPremiosDisponiveis;
             
             // 👥 BUSCAR ÚLTIMOS 3 GANHADORES (OUTROS)
-            const outrosGanhadores = historico
+            const outrosGanhadores = historicoSeguro
                 .filter(h => {
                     return h.email !== meuEmail && 
                         h.premio_nome !== 'Não foi dessa vez' &&

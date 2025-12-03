@@ -46,54 +46,61 @@ const CONFIG = {
     },
 
         // 🧩 ENDPOINTS DA API
+            // 🧩 ENDPOINTS DA API
     API: {
-    // Cadastro / login / etc
-    SIGNUP: '/api/signup',
+        // ========= CADASTRO / LOGIN =========
+        SIGNUP: '/api/signup',
 
-    // Comandos e sorteios
-    VERIFICAR_COMANDO: '/api/verificar-comando',
-    LIMPAR_COMANDO: '/api/limpar-comando',
-    SORTEIOS_AGENDADOS: '/api/sorteios-agendados',
-    PARTICIPANTES_ATIVOS: '/api/participantes-ativos',
-    RASPADINHAS_AGENDADAS: '/api/raspadinhas-agendadas',
-    RASPADINHA_ATIVA_AGORA: '/api/raspadinha-ativa-agora',
-    VERIFICAR_RESULTADO: '/api/verificar-resultado',
+        // ========= COMANDOS / SSE =========
+        VERIFICAR_COMANDO: '/api/verificar-comando',
+        LIMPAR_COMANDO: '/api/limpar-comando',
+        ENVIAR_COMANDO: '/api/enviar-comando',
+        STREAM_COMANDOS: '/api/stream-comandos',
 
-    // SSE (eventos em tempo real)
-    STREAM_COMANDOS: '/api/stream-comandos',
+        // ========= PARTICIPANTES =========
+        PARTICIPANTES: '/api/participantes',
+        PARTICIPANTES_ATIVOS: '/api/participantes-ativos',
+        PARTICIPANTES_COM_INDICACOES: '/api/participantes-com-indicacoes',
 
-    // ===============================
-    // PARTICIPANTES
-    // ===============================
-    PARTICIPANTES: '/api/participantes',
-    
-    // ===============================
-    // PRÊMIOS
-    // ===============================
-    PREMIOS: '/api/premios',
-    PREMIOS_ATIVOS: '/api/premios-ativos',
-    
-    // ===============================
-    // COMANDOS DE SORTEIO
-    // ===============================
-    ENVIAR_COMANDO: '/api/enviar-comando',
+        // ========= PRÊMIOS =========
+        PREMIOS: '/api/premios',
+        PREMIOS_ATIVOS: '/api/premios-ativos',
 
-    // ===============================
-    // 🔵 ENDPOINTS USADOS EM final.html
-    // ===============================
+        // ========= HISTÓRICO / GANHADORES =========
+        // ⚠️ ESTE É O QUE O FINAL.HTML VAI USAR
+        HISTORICO: '/api/historico-sorteios',
 
-    // Histórico de sorteios (usado no modal "Prêmios que Ganhei" e "Últimos ganhadores")
-    HISTORICO: '/api/sorteios/historico',
+        // ========= INDICAÇÕES =========
+        // POST para salvar indicações
+        INDICACOES_POST: '/api/indicacoes',
+        // GET para buscar indicações de um participante
+        INDICACOES_GET: (id) => `/api/indicacoes/${id}`,
 
-    // Indicações de amigos (modal de indicar amigos / chances extras)
-    INDICACOES: '/api/indicacoes',
+        // ========= RASPADINHA / ROLETA =========
+        SORTEIOS_AGENDADOS: '/api/sorteios-agendados',
+        SORTEIO_ATIVO_AGORA: '/api/sorteio-ativo-agora',
 
-    // Registrar que a pessoa avaliou no Google (ganha chances extras)
-    REGISTRAR_AVALIACAO: '/api/registrar-avaliacao',
+        RASPADINHAS_AGENDADAS: '/api/raspadinhas-agendadas',
+        RASPADINHA_ATIVA_AGORA: '/api/raspadinha-ativa-agora',
 
-    // Registrar sorteio da raspadinha (quando ganha um prêmio)
-    REGISTRAR_SORTEIO: '/api/registrar-sorteio'
-},
+        // Registrar prêmio ganho (roleta/raspadinha)
+        REGISTRAR_SORTEIO: '/api/registrar-sorteio',
+
+        // ========= AVALIAÇÃO GOOGLE =========
+        REGISTRAR_AVALIACAO: '/api/registrar-avaliacao',
+
+        // ========= CONFIG / DASHBOARD / TESTES =========
+        CONFIGURACOES: '/api/configuracoes',
+        DASHBOARD: '/api/dashboard',
+        TESTAR_ZAPIER: '/api/testar-zapier',
+
+        // ========= SORTEIO SINCRONIZADO =========
+        GERAR_SORTEIO_SINCRONIZADO: '/api/gerar-sorteio-sincronizado',
+        SORTEIO_SINCRONIZADO_POR_SEED: (seed) => `/api/sorteio-sincronizado/${seed}`
+    },
+
+
+
 
 
 

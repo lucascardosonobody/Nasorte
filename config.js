@@ -56,7 +56,7 @@ const CONFIG = {
         SORTEIOS_AGENDADOS: '/api/sorteios-agendados',
         PARTICIPANTES_ATIVOS: '/api/participantes-ativos',
         RASPADINHAS_AGENDADAS: '/api/raspadinhas-agendadas',
-        RASPADINHA_ATIVA_AGORA: '/api/raspadinhas-agendadas/ativa',
+        RASPADINHA_ATIVA_AGORA: '/api/raspadinha-ativa-agora',
         VERIFICAR_RESULTADO: '/api/verificar-resultado',
 
         // SSE (eventos em tempo real)
@@ -70,7 +70,7 @@ const CONFIG = {
             // PRÊMIOS
             // ===============================
             PREMIOS: '/api/premios',
-            PREMIOS_ATIVOS: '/api/premios/ativos',
+            PREMIOS_ATIVOS: '/api/premios-ativos',
         
             // ===============================
             // COMANDOS DE SORTEIO

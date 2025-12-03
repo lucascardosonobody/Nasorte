@@ -1425,6 +1425,30 @@ ARQUIVO 3: admin.html - Painel Administrativo Completo
                 }
             }
 
+            // =============================================
+            // ✅ FUNÇÃO FALTANTE — CONFIGURAÇÃO DE SORTEIO
+            // =============================================
+            async function carregarConfigSorteio() {
+                try {
+                    console.log('⚙️ Carregando configuração de sorteios (roleta + raspadinha)...');
+
+                    // 🔹 Verificar roleta ativa
+                    const roletaResp = await CONFIG.get(CONFIG.API.SORTEIOS_AGENDADOS);
+                    console.log('🎰 Sorteios (roleta):', roletaResp);
+
+                    // 🔹 Verificar raspadinha ativa
+                    const raspResp = await CONFIG.get(CONFIG.API.RASPADINHAS_AGENDADAS);
+                    console.log('🪙 Raspadinhas:', raspResp);
+
+                    // 👉 Aqui não ativa nada ainda, apenas evita crash
+                    // A ativação visual acontece nas funções específicas
+
+                } catch (err) {
+                    console.error('❌ Erro ao carregar configuração de sorteio:', err);
+                }
+            }
+
+
             // Inicializar ao carregar a página
             document.addEventListener('DOMContentLoaded', () => {
                 carregarConfigSorteio();
@@ -2887,30 +2911,6 @@ function adicionarHorarioPremioRaspadinha() {
                     renderizarRaspadinhasAgendadas();
                 }
 
-                // =============================================
-        // ✅ FUNÇÃO FALTANTE — CONFIGURAÇÃO DE SORTEIO
-        // =============================================
-        async function carregarConfigSorteio() {
-            try {
-                console.log('⚙️ Carregando configuração de sorteios (roleta + raspadinha)...');
-
-                // 🔹 Verificar roleta ativa
-                const roletaResp = await CONFIG.get(CONFIG.API.SORTEIOS_AGENDADOS);
-                console.log('🎰 Sorteios (roleta):', roletaResp);
-
-                // 🔹 Verificar raspadinha ativa
-                const raspResp = await CONFIG.get(CONFIG.API.RASPADINHAS_AGENDADAS);
-                console.log('🪙 Raspadinhas:', raspResp);
-
-                // 👉 Aqui não ativa nada ainda, apenas evita crash
-                // A ativação visual acontece nas funções específicas
-
-            } catch (err) {
-                console.error('❌ Erro ao carregar configuração de sorteio:', err);
-            }
-        }
-
-        
 
         // Carregar dados iniciais ao abrir o painel
         window.addEventListener('DOMContentLoaded', function() {

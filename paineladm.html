@@ -2466,8 +2466,9 @@ function adicionarHorarioPremioRaspadinha() {
             });
             
             tbody.innerHTML = raspadinhasAgendadas.map(r => {
-                const dataObj = new Date(r.data_raspadinha + 'T00:00:00-03:00');
-                const data = dataObj.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+                // usa a função global e pega só a parte da data
+                const dataCompleta = formatarData(r.data_raspadinha);
+                const data = dataCompleta.split(' ')[0] || dataCompleta; // "dd/mm/aaaa"
                 const premios = JSON.parse(r.premios_distribuicao || '[]');
                 
                 const raspadinhaDataISO = r.data_raspadinha;

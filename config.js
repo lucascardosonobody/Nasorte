@@ -47,36 +47,54 @@ const CONFIG = {
 
         // 🧩 ENDPOINTS DA API
     API: {
-        // Cadastro / login / etc
-        SIGNUP: '/api/signup',
+    // Cadastro / login / etc
+    SIGNUP: '/api/signup',
 
-        // Comandos e sorteios
-        VERIFICAR_COMANDO: '/api/verificar-comando',
-        LIMPAR_COMANDO: '/api/limpar-comando',
-        SORTEIOS_AGENDADOS: '/api/sorteios-agendados',
-        PARTICIPANTES_ATIVOS: '/api/participantes-ativos',
-        RASPADINHAS_AGENDADAS: '/api/raspadinhas-agendadas',
-        RASPADINHA_ATIVA_AGORA: '/api/raspadinha-ativa-agora',
-        VERIFICAR_RESULTADO: '/api/verificar-resultado',
+    // Comandos e sorteios
+    VERIFICAR_COMANDO: '/api/verificar-comando',
+    LIMPAR_COMANDO: '/api/limpar-comando',
+    SORTEIOS_AGENDADOS: '/api/sorteios-agendados',
+    PARTICIPANTES_ATIVOS: '/api/participantes-ativos',
+    RASPADINHAS_AGENDADAS: '/api/raspadinhas-agendadas',
+    RASPADINHA_ATIVA_AGORA: '/api/raspadinha-ativa-agora',
+    VERIFICAR_RESULTADO: '/api/verificar-resultado',
 
-        // SSE (eventos em tempo real)
-        STREAM_COMANDOS: '/api/stream-comandos',
-            // ===============================
-            // PARTICIPANTES
-            // ===============================
-            PARTICIPANTES: '/api/participantes',
-        
-            // ===============================
-            // PRÊMIOS
-            // ===============================
-            PREMIOS: '/api/premios',
-            PREMIOS_ATIVOS: '/api/premios-ativos',
-        
-            // ===============================
-            // COMANDOS DE SORTEIO
-            // ===============================
-            ENVIAR_COMANDO: '/api/enviar-comando',
-    },
+    // SSE (eventos em tempo real)
+    STREAM_COMANDOS: '/api/stream-comandos',
+
+    // ===============================
+    // PARTICIPANTES
+    // ===============================
+    PARTICIPANTES: '/api/participantes',
+    
+    // ===============================
+    // PRÊMIOS
+    // ===============================
+    PREMIOS: '/api/premios',
+    PREMIOS_ATIVOS: '/api/premios-ativos',
+    
+    // ===============================
+    // COMANDOS DE SORTEIO
+    // ===============================
+    ENVIAR_COMANDO: '/api/enviar-comando',
+
+    // ===============================
+    // 🔵 ENDPOINTS USADOS EM final.html
+    // ===============================
+
+    // Histórico de sorteios (usado no modal "Prêmios que Ganhei" e "Últimos ganhadores")
+    HISTORICO: '/api/sorteios/historico',
+
+    // Indicações de amigos (modal de indicar amigos / chances extras)
+    INDICACOES: '/api/indicacoes',
+
+    // Registrar que a pessoa avaliou no Google (ganha chances extras)
+    REGISTRAR_AVALIACAO: '/api/registrar-avaliacao',
+
+    // Registrar sorteio da raspadinha (quando ganha um prêmio)
+    REGISTRAR_SORTEIO: '/api/registrar-sorteio'
+},
+
 
 
     // 📁 CAMINHOS DOS ARQUIVOS
@@ -170,6 +188,13 @@ const CONFIG = {
  * @returns {string} URL completa
  */
 CONFIG.buildURL = function(endpoint) {
+    // 🔒 Proteção: se vier undefined/null, avisa e evita quebrar no startsWith
+    if (!endpoint) {
+        console.error('⚠️ CONFIG.buildURL recebeu endpoint indefinido:', endpoint);
+        // retorna só a base pra não estourar erro de JS
+        return this.API_BASE;
+    }
+
     // Se já for uma URL completa, retorna ela mesma
     if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
         return endpoint;
@@ -186,6 +211,7 @@ CONFIG.buildURL = function(endpoint) {
     // Retorna URL completa
     return `${this.API_BASE}${cleanEndpoint}`;
 };
+
 
 /**
  * Faz requisições HTTP com retry automático

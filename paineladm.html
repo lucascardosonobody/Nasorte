@@ -1042,6 +1042,65 @@ ARQUIVO 3: admin.html - Painel Administrativo Completo
             let intervalVerificacao = null;
             let roletaWindow = null;
 
+            // =====================================================
+            // CONTROLE DE UI DO PAINEL DE SORTEIO AUTOMÁTICO
+            // =====================================================
+            function atualizarStatusSorteioUI(ativo) {
+                const painel = document.querySelector('.painel-sorteio-automatico');
+                const badge  = document.getElementById('status-badge');
+                const texto  = document.getElementById('status-texto');
+                const info   = document.getElementById('status-info');
+                const blocoProgresso = document.getElementById('progresso-sorteio');
+
+                if (!painel || !badge || !texto || !info || !blocoProgresso) {
+                    console.warn('⚠️ Elementos do painel de sorteio não encontrados');
+                    return;
+                }
+
+                if (ativo) {
+                    painel.classList.add('sorteio-ativo');
+                    badge.style.background = '#4CAF50';
+                    texto.textContent = 'Sorteio Automático Ativo';
+                    info.textContent = 'Aguardando atingir o número de participantes configurado.';
+                    blocoProgresso.style.display = 'block';
+                } else {
+                    painel.classList.remove('sorteio-ativo');
+                    badge.style.background = '#ff4444';
+                    texto.textContent = 'Sorteio Desativado';
+                    info.textContent = 'Configure abaixo para ativar.';
+                    blocoProgresso.style.display = 'none';
+
+                    const barra = document.getElementById('barra-progresso');
+                    const textoProg = document.getElementById('texto-progresso');
+
+                    if (barra) {
+                        barra.style.width = '0%';
+                        barra.textContent = '';
+                    }
+                    if (textoProg) {
+                        textoProg.textContent = '0 / 0 participantes';
+                    }
+                }
+            }
+
+            function atualizarProgressoSorteio(atual, necessario) {
+                const barra = document.getElementById('barra-progresso');
+                const texto = document.getElementById('texto-progresso');
+                const bloco = document.getElementById('progresso-sorteio');
+
+                if (!barra || !texto || !bloco) return;
+
+                bloco.style.display = 'block';
+
+                const total = necessario || 1;
+                const percentual = Math.min((atual / total) * 100, 100);
+
+                barra.style.width = percentual + '%';
+                barra.textContent = Math.round(percentual) + '%';
+                texto.textContent = `${atual} / ${necessario} participantes`;
+            }
+
+
             // ============================================
             // SISTEMA DE NOTIFICAÇÕES
             // ============================================
@@ -1169,6 +1228,8 @@ ARQUIVO 3: admin.html - Painel Administrativo Completo
                     
                     // Atualizar botão
                     atualizarBotaoSorteio(true);
+                    atualizarStatusSorteioUI(true);
+
                     
                     console.log('✅ Sorteio automático ATIVADO!');
                     console.log('⏱️ Verificando a cada 10 segundos...');
@@ -1211,6 +1272,8 @@ ARQUIVO 3: admin.html - Painel Administrativo Completo
                             console.log('✅ Dados recebidos:', data);
                             
                             const participantesAtuais = data.participantes ? data.participantes.length : 0;
+                            atualizarProgressoSorteio(participantesAtuais, participantesNecessarios);
+
                             
                             console.log(`📊 Participantes: ${participantesAtuais}/${participantesNecessarios}`);
                             
@@ -1281,6 +1344,8 @@ ARQUIVO 3: admin.html - Painel Administrativo Completo
                 
                 // Atualizar botão
                 atualizarBotaoSorteio(false);
+                atualizarStatusSorteioUI(false);
+
                 
                 console.log('✅ Sorteio automático DESATIVADO!');
                 console.log('📊 Estado final:', sorteioAutomaticoAtivo);
@@ -2829,6 +2894,8 @@ async function abrirModalNovaRaspadinha() {
             
             // Carregar aba ativa (padrão: participantes)
             mudarAba('participantes');
+            atualizarStatusSorteioUI(false);
+
         });
 
         // ============================================

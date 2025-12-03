@@ -2592,8 +2592,14 @@ function adicionarHorarioPremioRaspadinha() {
             
             tbody.innerHTML = raspadinhasAgendadas.map(r => {
                 // usa a função global e pega só a parte da data
-                const dataCompleta = formatarData(r.data_raspadinha);
-                const data = dataCompleta.split(' ')[0] || dataCompleta; // "dd/mm/aaaa"
+                // r.data_raspadinha vem como "YYYY-MM-DD" (somente data)
+                // então formatamos manualmente, SEM mexer em fuso horário
+                let data = '-';
+                if (r.data_raspadinha) {
+                    const [ano, mes, dia] = r.data_raspadinha.substring(0, 10).split('-');
+                    data = `${dia}/${mes}/${ano}`; // dd/mm/aaaa
+                }
+
                 const premios = JSON.parse(r.premios_distribuicao || '[]');
                 
                 const raspadinhaDataISO = r.data_raspadinha;

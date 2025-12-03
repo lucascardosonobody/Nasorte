@@ -2566,104 +2566,174 @@ function adicionarHorarioPremioRaspadinha() {
             }
         }
 
-        // Renderizar raspadinhas
-        function renderizarRaspadinhasAgendadas() {
-            const tbody = document.getElementById('tabela-raspadinhas-agendadas');
-            
-            if (raspadinhasAgendadas.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Nenhuma raspadinha agendada</td></tr>';
-                return;
-            }
-            
-            const agora = new Date();
-            const dataHojeBR = agora.toLocaleString('pt-BR', { 
-                timeZone: 'America/Sao_Paulo',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit'
-            }).split('/').reverse().join('-');
-            
-            const horaAtualBR = agora.toLocaleString('pt-BR', { 
-                timeZone: 'America/Sao_Paulo',
-                hour: '2-digit', 
-                minute: '2-digit',
-                hour12: false 
-            });
-            
-            tbody.innerHTML = raspadinhasAgendadas.map(r => {
-                // usa a função global e pega só a parte da data
-                // r.data_raspadinha vem como "YYYY-MM-DD" (somente data)
-                // então formatamos manualmente, SEM mexer em fuso horário
-                let data = '-';
-                if (r.data_raspadinha) {
-                    const [ano, mes, dia] = r.data_raspadinha.substring(0, 10).split('-');
-                    data = `${dia}/${mes}/${ano}`; // dd/mm/aaaa
-                }
+        // Renderizar raspadinhas (com status ATIVA AGORA e filtros iguais à roleta)
+function renderizarRaspadinhasAgendadas() {
+    const tbody = document.getElementById('tabela-raspadinhas-agendadas');
 
-                const premios = JSON.parse(r.premios_distribuicao || '[]');
-                
-                const raspadinhaDataISO = r.data_raspadinha;
-                const estaNoHorario = (
-                    raspadinhaDataISO === dataHojeBR && 
-                    horaAtualBR >= r.hora_inicio && 
-                    horaAtualBR <= r.hora_fim
-                );
-                
-                let statusHTML = '';
-                if (r.status === 'pendente') {
-                    if (estaNoHorario) {
-                        statusHTML = '<span style="background:#dbeafe;color:#1e40af;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">🔵 ATIVA AGORA</span>';
-                    } else {
-                        statusHTML = '<span style="background:#fef3c7;color:#92400e;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">⏳ Pendente</span>';
-                    }
-                } else if (r.status === 'ativo') {
-                    statusHTML = '<span style="background:#dbeafe;color:#1e40af;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">🔵 Ativo</span>';
-                } else if (r.status === 'realizado') {
-                    statusHTML = '<span style="background:#d1fae5;color:#065f46;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">✅ Realizado</span>';
+    if (!tbody) return;
+
+    if (!raspadinhasAgendadas || raspadinhasAgendadas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Nenhuma raspadinha agendada</td></tr>';
+        return;
+    }
+
+    // 📅 Data/hora atual em BR (mesma lógica da roleta)
+    const agora = new Date();
+    const dataHojeBR = agora.toLocaleString('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).split('/').reverse().join('-');
+
+    const horaAtualBR = agora.toLocaleString('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    });
+
+    // 🎯 Filtros (status + data)
+    const filtroStatus = document.getElementById('filtroStatusRaspadinha')?.value || 'todos';
+    const filtroDataInicio = document.getElementById('filtroDataInicioRaspadinha')?.value || '';
+    const filtroDataFim = document.getElementById('filtroDataFimRaspadinha')?.value || '';
+
+    const linhasHTML = raspadinhasAgendadas
+        .filter(r => {
+            // 🔍 Filtrar por intervalo de datas (se preenchido)
+            if (filtroDataInicio && r.data_raspadinha < filtroDataInicio) return false;
+            if (filtroDataFim && r.data_raspadinha > filtroDataFim) return false;
+            return true;
+        })
+        .map(r => {
+            // Formatando data dd/mm/aaaa (sem fuso)
+            let dataFormatada = '-';
+            if (r.data_raspadinha) {
+                const [ano, mes, dia] = r.data_raspadinha.substring(0, 10).split('-');
+                dataFormatada = `${dia}/${mes}/${ano}`;
+            }
+
+            // Parse seguro da distribuição de prêmios
+            let premiosArr = [];
+            try {
+                if (Array.isArray(r.premios_distribuicao)) {
+                    premiosArr = r.premios_distribuicao;
                 } else {
-                    statusHTML = '<span style="background:#fee2e2;color:#991b1b;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">❌ Cancelado</span>';
+                    premiosArr = JSON.parse(r.premios_distribuicao || '[]');
                 }
-                
-                let premiosHTML;
+            } catch (e) {
+                console.error('❌ Erro ao parsear premios_distribuicao da raspadinha', r.id, e);
+                premiosArr = [];
+            }
+
+            // ⏱️ Está no horário desta raspadinha?
+            const raspadinhaDataISO = r.data_raspadinha;
+            const estaNoHorario =
+                raspadinhaDataISO === dataHojeBR &&
+                horaAtualBR >= r.hora_inicio &&
+                horaAtualBR <= r.hora_fim;
+
+            // 🎯 FILTRO de status "Ativos" usa o horário atual
+            if (filtroStatus === 'ativo' && !estaNoHorario) {
+                return null; // será removido depois
+            }
+            if (filtroStatus === 'pendente' && r.status !== 'pendente') {
+                return null;
+            }
+            if (filtroStatus === 'realizado' && r.status !== 'realizado') {
+                return null;
+            }
+            if (filtroStatus === 'cancelado' && r.status !== 'cancelado') {
+                return null;
+            }
+
+            // 🏷️ Status visual
+            let statusHTML = '';
+            if (r.status === 'pendente' || r.status === 'ativo') {
                 if (estaNoHorario) {
-                    const premiosAtivos = premios.filter(p => {
-                        return p.horario_inicio <= horaAtualBR && p.horario_fim >= horaAtualBR;
-                    });
-                    
-                    if (premiosAtivos.length > 0) {
-                        premiosHTML = premiosAtivos.map(p => 
-                            `<div style="margin:2px 0;">🎁 <strong>${p.premio_nome}</strong> <span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:8px;font-size:11px;">🔵 ATIVO</span></div>`
-                        ).join('');
-                    } else {
-                        premiosHTML = '<span style="color:#f59e0b;">⚠️ Nenhum prêmio ativo neste horário</span>';
-                    }
+                    statusHTML =
+                        '<span style="background:#dbeafe;color:#1e40af;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">🔵 ATIVA AGORA</span>';
                 } else {
-                    premiosHTML = premios.map(p => 
-                        `<div style="margin:2px 0;">🎁 ${p.premio_nome} (${p.horario_inicio}-${p.horario_fim})</div>`
-                    ).join('');
+                    statusHTML =
+                        '<span style="background:#fef3c7;color:#92400e;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">⏳ Pendente</span>';
                 }
-                
-                return `
-                    <tr style="${estaNoHorario ? 'background:#f0f9ff;border-left:4px solid #1e40af;' : ''}">
-                        <td>#${r.id}</td>
-                        <td>📅 ${data}</td>
-                        <td>
-                            🕐 ${r.hora_inicio} até ${r.hora_fim}
-                            ${estaNoHorario ? '<br><span style="color:#1e40af;font-weight:700;font-size:13px;">🔵 EM ANDAMENTO</span>' : ''}
-                        </td>
-                        <td>${premiosHTML}</td>
-                        <td>${statusHTML}</td>
-                        <td>
-                            ${r.status === 'pendente' || r.status === 'ativo' ? `
-                                <button class="btn btn-danger btn-small" onclick="cancelarRaspadinha(${r.id})">
-                                    🗑️ Cancelar
-                                </button>
-                            ` : ''}
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
+            } else if (r.status === 'realizado') {
+                statusHTML =
+                    '<span style="background:#d1fae5;color:#065f46;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">✅ Realizado</span>';
+            } else {
+                statusHTML =
+                    '<span style="background:#fee2e2;color:#991b1b;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">❌ Cancelado</span>';
+            }
+
+            // 🎁 Coluna de prêmios (igual lógica da roleta)
+            let premiosHTML = '';
+            if (estaNoHorario && premiosArr.length > 0) {
+                const premiosAtivos = premiosArr.filter(p => {
+                    return p.horario_inicio <= horaAtualBR && p.horario_fim >= horaAtualBR;
+                });
+
+                if (premiosAtivos.length > 0) {
+                    premiosHTML = premiosAtivos
+                        .map(
+                            p =>
+                                `<div style="margin:2px 0;">🎁 <strong>${p.premio_nome}</strong> <span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:8px;font-size:11px;">🔵 ATIVO</span></div>`
+                        )
+                        .join('');
+                } else {
+                    premiosHTML =
+                        '<span style="color:#f59e0b;">⚠️ Nenhum prêmio ativo neste horário</span>';
+                }
+            } else if (premiosArr.length > 0) {
+                premiosHTML = premiosArr
+                    .map(
+                        p =>
+                            `<div style="margin:2px 0;">🎁 ${p.premio_nome} (${p.horario_inicio}-${p.horario_fim})</div>`
+                    )
+                    .join('');
+            } else {
+                premiosHTML =
+                    '<span style="color:#999;">Nenhum prêmio configurado</span>';
+            }
+
+            // 🕒 Coluna de período ativo
+            const periodoHTML = `
+                🕐 ${r.hora_inicio} até ${r.hora_fim}
+                ${estaNoHorario ? '<br><span style="color:#1e40af;font-weight:700;font-size:13px;">🔵 EM ANDAMENTO</span>' : ''}
+            `;
+
+            // Botões
+            const podeCancelar =
+                r.status === 'pendente' || r.status === 'ativo';
+
+            return `
+                <tr style="${estaNoHorario ? 'background:#f0f9ff;border-left:4px solid #1e40af;' : ''}">
+                    <td>#${r.id}</td>
+                    <td>📅 ${dataFormatada}</td>
+                    <td>${periodoHTML}</td>
+                    <td>${premiosHTML}</td>
+                    <td>${statusHTML}</td>
+                    <td>
+                        ${
+                            podeCancelar
+                                ? `<button class="btn btn-danger btn-small" onclick="cancelarRaspadinha(${r.id})">🗑️ Cancelar</button>`
+                                : ''
+                        }
+                    </td>
+                </tr>
+            `;
+        })
+        .filter(linha => linha !== null) // remove filtrados pelo status
+        .join('');
+
+    if (!linhasHTML) {
+        tbody.innerHTML =
+            '<tr><td colspan="6" style="text-align:center;">Nenhuma raspadinha encontrada para os filtros selecionados</td></tr>';
+    } else {
+        tbody.innerHTML = linhasHTML;
+    }
+}
+
+
 
         
      // 2️⃣ FUNÇÃO: abrirModalNovaRaspadinha (linha ~2936)

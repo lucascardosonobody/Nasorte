@@ -1611,33 +1611,17 @@ function renderizarParticipantes() {
             };
 
             console.log('📤 Enviando para API:', dados);
+            console.log('🌐 URL:', CONFIG.buildURL(CONFIG.API.PREMIOS));
 
             try {
-                const response = await fetch(CONFIG.buildURL(CONFIG.API.PREMIOS), {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(dados)
-                });
-
-                console.log('📡 Status HTTP:', response.status);
-                console.log('📡 Content-Type:', response.headers.get('content-type'));
-
-                // Verificar se a resposta é JSON
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    const textoErro = await response.text();
-                    console.error('❌ Resposta não é JSON:', textoErro);
-                    throw new Error('Servidor retornou HTML em vez de JSON');
-                }
-
-                const data = await response.json();
+                // 🔥 USAR CONFIG.post() em vez de fetch direto
+                const data = await CONFIG.post(CONFIG.API.PREMIOS, dados);
+                
                 console.log('✅ Resposta da API:', data);
 
-                if (response.ok && (data.success || data.id)) {
-                    alert('✅ Prêmio cadastrado com sucesso!');
+                // ✅ Verificar sucesso (backend retorna { success: true, id: X, nome: Y })
+                if (data.success && data.id) {
+                    mostrarNotificacao('✅ Prêmio cadastrado com sucesso!', 'success');
                     fecharModal('modal-novo-premio');
                     
                     // Limpar formulário
@@ -1648,12 +1632,13 @@ function renderizarParticipantes() {
                     // Recarregar lista
                     await carregarPremios();
                 } else {
-                    throw new Error(data.erro || 'Erro ao cadastrar prêmio');
+                    throw new Error(data.erro || data.error || 'Erro ao cadastrar prêmio');
                 }
                 
             } catch (error) {
                 console.error('❌ Erro completo:', error);
-                alert('❌ Erro ao cadastrar prêmio: ' + error.message);
+                console.error('Stack:', error.stack);
+                mostrarNotificacao('❌ Erro ao cadastrar prêmio: ' + error.message, 'error');
             }
         }
 

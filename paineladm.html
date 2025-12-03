@@ -2722,10 +2722,7 @@ function adicionarHorarioPremioRaspadinha() {
                         horaAtualBR >= r.hora_inicio &&
                         horaAtualBR <= r.hora_fim;
 
-                    // 🎯 FILTRO de status "Ativos" usa o horário atual
-                    if (filtroStatus === 'ativo' && !estaNoHorario) {
-                        return null; // será removido depois
-                    }
+                    
                     if (filtroStatus === 'pendente' && r.status !== 'pendente') {
                         return null;
                     }
@@ -2738,7 +2735,7 @@ function adicionarHorarioPremioRaspadinha() {
 
                     // 🏷️ Status visual
                     let statusHTML = '';
-                    if (r.status === 'pendente') {
+                    if (r.status === 'pendente' || r.status === 'ativo') {
                         if (estaNoHorario) {
                             statusHTML =
                                 '<span style="background:#dbeafe;color:#1e40af;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">🔵 ATIVA AGORA</span>';
@@ -2753,6 +2750,12 @@ function adicionarHorarioPremioRaspadinha() {
                         statusHTML =
                             '<span style="background:#fee2e2;color:#991b1b;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">❌ Cancelado</span>';
                     }
+
+                    const statusCalculado =
+                        r.status === 'cancelado' ? 'cancelado' :
+                        r.status === 'realizado' ? 'realizado' :
+                        estaNoHorario ? 'ativo' : 'pendente';
+
 
                     // 🎁 Coluna de prêmios (igual lógica da roleta)
                     let premiosHTML = '';

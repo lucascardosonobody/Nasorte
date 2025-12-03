@@ -2276,6 +2276,16 @@ function adicionarHorarioPremioRaspadinha() {
             document.getElementById(`horario-${id}`)?.remove();
         }
 
+        // Remover horário da raspadinha
+        function removerHorarioPremioRaspadinha(id) {
+            const el = document.getElementById(`horarioRaspadinha-${id}`);
+            if (el) {
+                el.remove();
+                console.log(`🗑️ Horário de raspadinha #${id + 1} removido`);
+            }
+        }
+
+
         // Salvar sorteio agendado
             async function salvarSorteioAgendado(event) {
                 event.preventDefault();
@@ -2385,6 +2395,125 @@ function adicionarHorarioPremioRaspadinha() {
                     alert('❌ Erro ao salvar sorteio: ' + error.message);
                 }
             }
+
+            // ============================================
+            // SALVAR RASPADINHA AGENDADA
+            // ============================================
+            async function salvarRaspadinhaAgendada(event) {
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+
+                console.log('💾 Iniciando salvamento de RASPADINHA...');
+
+                const dataRaspadinha   = document.getElementById('dataRaspadinha').value;
+                const horaInicioRasp   = document.getElementById('horaInicioRaspadinha').value;
+                const horaFimRasp      = document.getElementById('horaFimRaspadinha').value;
+
+                console.log('📅 Dados da raspadinha:', { dataRaspadinha, horaInicioRasp, horaFimRasp });
+
+                if (!dataRaspadinha || !horaInicioRasp || !horaFimRasp) {
+                    alert('❌ Preencha data, hora de início e hora de fim da raspadinha!');
+                    return false;
+                }
+
+                if (horaFimRasp <= horaInicioRasp) {
+                    alert('❌ A hora de fim deve ser maior que a hora de início!');
+                    return false;
+                }
+
+                const container = document.getElementById('listaHorariosPremiosRaspadinha');
+                const blocos    = container.querySelectorAll('[id^="horarioRaspadinha-"]');
+
+                console.log('🔍 Total de blocos de horário da raspadinha:', blocos.length);
+
+                const premiosDistribuicao = [];
+
+                for (const bloco of blocos) {
+                    const id = bloco.id.split('-')[1];
+
+                    const horaInicio = document.getElementById(`horaInicioRaspadinha-${id}`)?.value;
+                    const horaFim    = document.getElementById(`horaFimRaspadinha-${id}`)?.value;
+                    const premioId   = document.getElementById(`premioRaspadinha-${id}`)?.value;
+
+                    console.log(`  Horário raspadinha #${id}:`, { horaInicio, horaFim, premioId });
+
+                    if (!horaInicio || !horaFim || !premioId) {
+                        alert('❌ Preencha todos os campos dos horários de prêmios da raspadinha!');
+                        return false;
+                    }
+
+                    // garantir que está dentro do período geral da raspadinha
+                    if (horaInicio < horaInicioRasp || horaFim > horaFimRasp) {
+                        alert(`❌ Os horários dos prêmios devem estar entre ${horaInicioRasp} e ${horaFimRasp}!`);
+                        return false;
+                    }
+
+                    const premio = premiosRaspadinha.find(p => p.id == premioId);
+                    if (!premio) {
+                        alert(`❌ Prêmio de raspadinha não encontrado: ID ${premioId}`);
+                        return false;
+                    }
+
+                    premiosDistribuicao.push({
+                        horario_inicio: horaInicio,
+                        horario_fim:    horaFim,
+                        premio_id:      premioId,
+                        premio_nome:    premio.nome
+                    });
+                }
+
+                if (premiosDistribuicao.length === 0) {
+                    alert('❌ Adicione pelo menos um horário de prêmio para a raspadinha!');
+                    return false;
+                }
+
+                const payload = {
+                    data_raspadinha:     dataRaspadinha,
+                    hora_inicio:         horaInicioRasp,
+                    hora_fim:            horaFimRasp,
+                    premios_distribuicao: premiosDistribuicao
+                };
+
+                console.log('📤 Enviando RASPADINHA para API:', payload);
+
+                try {
+                    const response = await fetch(CONFIG.buildURL(CONFIG.API.RASPADINHAS_AGENDADAS), {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept':       'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    console.log('📡 Status da resposta (raspadinha):', response.status);
+
+                    if (!response.ok) {
+                        let msg = 'Erro ao salvar raspadinha';
+                        try {
+                            const err = await response.json();
+                            msg = err.erro || err.error || msg;
+                        } catch (_) {}
+                        throw new Error(msg);
+                    }
+
+                    const data = await response.json();
+                    console.log('✅ Raspadinha salva:', data);
+
+                    alert('✅ Raspadinha agendada com sucesso!');
+                    fecharModal('modal-nova-raspadinha');
+                    await carregarRaspadinhasAgendadas();
+
+                    return false;
+                } catch (error) {
+                    console.error('❌ Erro completo (raspadinha):', error);
+                    alert('❌ Erro ao salvar raspadinha: ' + error.message);
+                    return false;
+                }
+            }
+
 
         // Cancelar sorteio
         async function cancelarSorteio(id) {

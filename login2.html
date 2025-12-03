@@ -270,126 +270,127 @@
         // CARREGAR PRÊMIOS DAS RASPADINHAS AGENDADAS
         // ============================================
         // ============================================
-// SUBSTITUIR A FUNÇÃO carregarPremiosAgendados() NO login2.html
-// Procure por "async function carregarPremiosAgendados()"
-// ============================================
+        // SUBSTITUIR A FUNÇÃO carregarPremiosAgendados() NO login2.html
+        // Procure por "async function carregarPremiosAgendados()"
+        // ============================================
 
-async function carregarPremiosAgendados() {
-    try {
-        console.log('🔍 Iniciando carregamento de prêmios da raspadinha...');
-        
-        // ✅ VALIDAR SE CONFIG EXISTE
-        if (typeof CONFIG === 'undefined') {
-            throw new Error('CONFIG não está definido');
-        }
-        
-        // 🆕 BUSCAR DIRETAMENTE A RASPADINHA ATIVA
-        const response = await fetch(CONFIG.buildURL(CONFIG.API.RASPADINHA_ATIVA_AGORA));
-        
-        console.log('📡 Status da resposta:', response.status);
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ Erro HTTP:', response.status, errorText);
-            throw new Error(`HTTP ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('📦 Dados recebidos:', data);
-        
-        // ✅ VERIFICAR SE HÁ RASPADINHA ATIVA
-        if (!data || !data.raspadinha) {
-            console.log('⚠️ Nenhuma raspadinha ativa no momento');
-            premios = ['NÃO FOI DESSA VEZ'];
-            mostrarMensagemErro('⏳ Nenhuma raspadinha ativa no momento');
-            inicializarCanvas();
-            return;
-        }
-        
-        const raspadinha = data.raspadinha;
-        console.log('✅ Raspadinha ativa encontrada:', raspadinha);
-        
-        // 🆕 Data e hora atual em São Paulo
-        const agora = new Date();
-        const agoraEmSP = new Date(agora.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-        
-        const horaAtual = String(agoraEmSP.getHours()).padStart(2, '0') + ':' + 
-                         String(agoraEmSP.getMinutes()).padStart(2, '0');
-        
-        console.log('🕐 Hora atual (SP):', horaAtual);
-        
-        // 🆕 PROCESSAR PRÊMIOS DA RASPADINHA
-        let premiosDistribuicao = [];
-        
-        try {
-            if (typeof raspadinha.premios_distribuicao === 'string') {
-                premiosDistribuicao = JSON.parse(raspadinha.premios_distribuicao);
-            } else if (Array.isArray(raspadinha.premios_distribuicao)) {
-                premiosDistribuicao = raspadinha.premios_distribuicao;
+        async function carregarPremiosAgendados() {
+            try {
+                console.log('🔍 Iniciando carregamento de prêmios da raspadinha...');
+
+                // ✅ VALIDAR CONFIG
+                if (typeof CONFIG === 'undefined' || !CONFIG.API || !CONFIG.API.RASPADINHA_ATIVA_AGORA) {
+                    throw new Error('CONFIG.API.RASPADINHA_ATIVA_AGORA não está definido');
+                }
+
+                // ✅ MONTAR URL E FAZER REQUISIÇÃO
+                const url = CONFIG.buildURL(CONFIG.API.RASPADINHA_ATIVA_AGORA);
+                console.log('🌐 Buscando raspadinha ativa em:', url);
+
+                const response = await fetch(url, {
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                console.log('📡 Status da resposta:', response.status);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Erro HTTP:', response.status, errorText);
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('📦 Dados recebidos:', data);
+
+                // ✅ PEGAR OBJETO DA RASPADINHA
+                const raspadinha = data.raspadinha || data.raspadinhaAtiva || data;
+
+                if (!raspadinha) {
+                    console.log('⚠️ Nenhuma raspadinha ativa no momento');
+                    premios = ['NÃO FOI DESSA VEZ'];
+                    mostrarMensagemErro('⏳ Nenhuma raspadinha ativa no momento');
+                    inicializarCanvas();
+                    return;
+                }
+
+                console.log('✅ Raspadinha ativa encontrada:', raspadinha);
+
+                // 🕐 HORA ATUAL EM SP
+                const agora = new Date();
+                const agoraEmSP = new Date(
+                    agora.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' })
+                );
+                const horaAtual =
+                    String(agoraEmSP.getHours()).padStart(2, '0') + ':' +
+                    String(agoraEmSP.getMinutes()).padStart(2, '0');
+
+                console.log('🕐 Hora atual (SP):', horaAtual);
+
+                // 🎁 PROCESSAR PRÊMIOS
+                let premiosDistribuicao = [];
+                try {
+                    if (typeof raspadinha.premios_distribuicao === 'string') {
+                        premiosDistribuicao = JSON.parse(raspadinha.premios_distribuicao);
+                    } else if (Array.isArray(raspadinha.premios_distribuicao)) {
+                        premiosDistribuicao = raspadinha.premios_distribuicao;
+                    }
+
+                    console.log('📦 Total de prêmios na raspadinha:', premiosDistribuicao.length);
+                    console.log('📋 Prêmios:', premiosDistribuicao);
+                } catch (e) {
+                    console.error('❌ Erro ao fazer parse dos prêmios:', e);
+                    premios = ['NÃO FOI DESSA VEZ'];
+                    mostrarMensagemErro('❌ Erro ao processar prêmios');
+                    inicializarCanvas();
+                    return;
+                }
+
+                // ⏰ FILTRAR POR HORÁRIO
+                const premiosAtivos = premiosDistribuicao.filter(p => {
+                    if (!p.horario_inicio || !p.horario_fim) {
+                        console.log(`⚠️ Prêmio sem horário: ${p.premio_nome}`);
+                        return false;
+                    }
+
+                    const dentroHorario = p.horario_inicio <= horaAtual && p.horario_fim >= horaAtual;
+
+                    console.log(`⏰ ${p.premio_nome}:`, {
+                        inicio: p.horario_inicio,
+                        fim: p.horario_fim,
+                        horaAtual,
+                        ativo: dentroHorario
+                    });
+
+                    return dentroHorario;
+                });
+
+                console.log('🎁 Prêmios ativos AGORA:', premiosAtivos.length);
+
+                if (premiosAtivos.length === 0) {
+                    premios = ['NÃO FOI DESSA VEZ'];
+                    mostrarMensagemErro('⏳ Nenhum prêmio disponível neste horário');
+                } else {
+                    premios = premiosAtivos.map(p => p.premio_nome);
+                    console.log('🎁 TOTAL DE PRÊMIOS CARREGADOS:', premios.length);
+                    console.log('📋 Lista completa de prêmios:', premios);
+
+                    const msgErro = document.querySelector('.mensagem-erro');
+                    if (msgErro) msgErro.remove();
+
+                    const raspadinhaCard = document.querySelector('.raspadinha-card');
+                    if (raspadinhaCard) raspadinhaCard.classList.remove('oculto');
+                }
+
+                inicializarCanvas();
+
+            } catch (error) {
+                console.error('❌ Erro ao carregar raspadinhas:', error);
+                premios = ['ERRO AO CARREGAR'];
+                mostrarMensagemErro('❌ Erro ao carregar raspadinha. Tente novamente.');
+                inicializarCanvas();
             }
-            
-            console.log('📦 Total de prêmios na raspadinha:', premiosDistribuicao.length);
-            console.log('📋 Prêmios:', premiosDistribuicao);
-        } catch (e) {
-            console.error('❌ Erro ao fazer parse dos prêmios:', e);
-            premios = ['NÃO FOI DESSA VEZ'];
-            mostrarMensagemErro('❌ Erro ao processar prêmios');
-            inicializarCanvas();
-            return;
         }
-        
-        // 🆕 FILTRAR PRÊMIOS ATIVOS NO HORÁRIO ATUAL
-        const premiosAtivos = premiosDistribuicao.filter(p => {
-            if (!p.horario_inicio || !p.horario_fim) {
-                console.log(`⚠️ Prêmio sem horário: ${p.premio_nome}`);
-                return false;
-            }
-            
-            const dentroHorario = p.horario_inicio <= horaAtual && p.horario_fim >= horaAtual;
-            
-            console.log(`⏰ ${p.premio_nome}:`, {
-                inicio: p.horario_inicio,
-                fim: p.horario_fim,
-                horaAtual: horaAtual,
-                ativo: dentroHorario
-            });
-            
-            return dentroHorario;
-        });
-        
-        console.log('🎁 Prêmios ativos AGORA:', premiosAtivos.length);
-        
-        if (premiosAtivos.length === 0) {
-            premios = ['NÃO FOI DESSA VEZ'];
-            mostrarMensagemErro('⏳ Nenhum prêmio disponível neste horário');
-        } else {
-            // ✅ EXTRAIR APENAS OS NOMES DOS PRÊMIOS
-            premios = premiosAtivos.map(p => p.premio_nome);
-            
-            console.log('🎁 TOTAL DE PRÊMIOS CARREGADOS:', premios.length);
-            console.log('📋 Lista completa de prêmios:', premios);
-            
-            // ✅ REMOVER MENSAGEM DE ERRO E MOSTRAR RASPADINHA
-            const msgErro = document.querySelector('.mensagem-erro');
-            if (msgErro) {
-                msgErro.remove();
-            }
-            
-            const raspadinhaCard = document.querySelector('.raspadinha-card');
-            if (raspadinhaCard) {
-                raspadinhaCard.classList.remove('oculto');
-            }
-        }
-        
-        inicializarCanvas();
-        
-    } catch (error) {
-        console.error('❌ Erro ao carregar raspadinhas:', error);
-        premios = ['ERRO AO CARREGAR'];
-        mostrarMensagemErro('❌ Erro ao carregar raspadinha. Tente novamente.');
-        inicializarCanvas();
-    }
-}
+
 
         function mostrarMensagemErro(mensagem) {
             // ✅ OCULTAR A RASPADINHA

@@ -56,6 +56,7 @@ const CONFIG = {
         SORTEIOS_AGENDADOS: '/api/sorteios-agendados',
         PARTICIPANTES_ATIVOS: '/api/participantes-ativos',
         RASPADINHAS_AGENDADAS: '/api/raspadinhas-agendadas',
+        RASPADINHA_ATIVA_AGORA: '/api/raspadinhas-agendadas/ativa',
         VERIFICAR_RESULTADO: '/api/verificar-resultado',
 
         // SSE (eventos em tempo real)

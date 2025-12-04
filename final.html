@@ -2070,108 +2070,86 @@ function mostrarModalChancesAcabaram() {
             document.getElementById('lista-meus-premios').innerHTML = htmlMeusPremios;
             
             // 🎯 BUSCAR PRÊMIOS DISPONÍVEIS (MESMA INFO DA RASPADINHA)
-            let htmlPremiosDisponiveis = '';
-            let totalDisponiveis = 0;
+let htmlPremiosDisponiveis = '';
+let totalDisponiveis = 0;
 
-            try {
-                console.log('🔎 Buscando prêmios disponíveis (raspadinha ativa)...');
+try {
+    console.log('🔎 Buscando prêmios disponíveis (raspadinha ativa)...');
 
-                const responseRaspAtiva = await fetch(CONFIG.buildURL(CONFIG.API.RASPADINHA_ATIVA_AGORA));
+    const responseRaspAtiva = await fetch(CONFIG.buildURL(CONFIG.API.RASPADINHA_ATIVA_AGORA));
+    // ... (seu código de validação da resposta)
 
-                if (!responseRaspAtiva.ok) {
-                    const textoErro = await responseRaspAtiva.text();
-                    console.error('❌ Erro HTTP RASPADINHA_ATIVA_AGORA:', responseRaspAtiva.status, textoErro);
-                    throw new Error('Erro ao buscar raspadinha ativa');
-                }
+    const dataRasp = await responseRaspAtiva.json();
+    console.log('📦 Resposta RASPADINHA_ATIVA_AGORA:', dataRasp);
 
-                const contentTypeRaspAtiva = responseRaspAtiva.headers.get('content-type') || '';
-                if (!contentTypeRaspAtiva.includes('application/json')) {
-                    const textoErro = await responseRaspAtiva.text();
-                    console.error('❌ RASPADINHA_ATIVA_AGORA não retornou JSON:', textoErro);
-                    throw new Error('Resposta inválida da raspadinha ativa');
-                }
+    let premios = [];
 
-                const dataRasp = await responseRaspAtiva.json();
-                console.log('📦 Resposta RASPADINHA_ATIVA_AGORA:', dataRasp);
+    // 🔹 CASO 1: backend manda { premios_ativos: [...] }
+    if (Array.isArray(dataRasp.premios_ativos)) {
+        console.log('✅ Usando dataRasp.premios_ativos');
+        premios = dataRasp.premios_ativos;
 
-                let premios = [];
+    // 🔹 CASO 1b: { raspadinha: { premios_ativos: [...] } }
+    } else if (dataRasp.raspadinha && Array.isArray(dataRasp.raspadinha.premios_ativos)) {
+        console.log('✅ Usando dataRasp.raspadinha.premios_ativos');
+        premios = dataRasp.raspadinha.premios_ativos;
 
-                // 🔹 CASO 1: backend manda { premios_ativos: [...] }
-                if (Array.isArray(dataRasp.premios_ativos)) {
-                    console.log('✅ Usando dataRasp.premios_ativos');
-                    premios = dataRasp.premios_ativos;
+    // 🔹 CASO 2: { premios_disponiveis_agora: [...] }
+    } else if (Array.isArray(dataRasp.premios_disponiveis_agora)) {
+        console.log('✅ Usando dataRasp.premios_disponiveis_agora');
+        premios = dataRasp.premios_disponiveis_agora;
 
-                // 🔹 CASO 1b: backend manda { raspadinha: { premios_ativos: [...] } }
-                } else if (dataRasp.raspadinha && Array.isArray(dataRasp.raspadinha.premios_ativos)) {
-                    console.log('✅ Usando dataRasp.raspadinha.premios_ativos');
-                    premios = dataRasp.raspadinha.premios_ativos;
+    // 🔹 CASO 3: { premios_distribuicao: "json..." }
+    } else if (dataRasp && dataRasp.premios_distribuicao) {
+        console.log('✅ Usando dataRasp.premios_distribuicao (JSON parse)');
+        
+        const agoraEmSP = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+        const horaAtual = String(agoraEmSP.getHours()).padStart(2, '0') + ':' + 
+                          String(agoraEmSP.getMinutes()).padStart(2, '0');
 
-                // 🔹 CASO 2: backend manda { premios_disponiveis_agora: [...] }
-                } else if (Array.isArray(dataRasp.premios_disponiveis_agora)) {
-                    console.log('✅ Usando dataRasp.premios_disponiveis_agora');
-                    premios = dataRasp.premios_disponiveis_agora;
+        let premiosDistribuicao = [];
+        try {
+            premiosDistribuicao = JSON.parse(dataRasp.premios_distribuicao || '[]');
+            console.log('🧩 premiosDistribuicao:', premiosDistribuicao);
+        } catch (e) {
+            console.error('❌ Erro ao fazer parse da distribuição de prêmios:', e);
+            premiosDistribuicao = [];
+        }
 
-                // 🔹 CASO 3: backend manda { premios_distribuicao: "json..." }
-                } else if (dataRasp && dataRasp.premios_distribuicao) {
-                    console.log('✅ Usando dataRasp.premios_distribuicao (JSON parse)');
-                    
-                    const agora = new Date();
-                    const agoraEmSP = new Date(agora.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-                    const horaAtual = String(agoraEmSP.getHours()).padStart(2, '0') + ':' + 
-                                    String(agoraEmSP.getMinutes()).padStart(2, '0');
+        premios = premiosDistribuicao.filter(p => {
+            return (!p.horario_inicio || p.horario_inicio <= horaAtual) &&
+                   (!p.horario_fim || p.horario_fim >= horaAtual);
+        });
 
-                    let premiosDistribuicao = [];
-                    try {
-                        premiosDistribuicao = JSON.parse(dataRasp.premios_distribuicao || '[]');
-                        console.log('🧩 premiosDistribuicao:', premiosDistribuicao);
-                    } catch (e) {
-                        console.error('❌ Erro ao fazer parse da distribuição de prêmios:', e);
-                        premiosDistribuicao = [];
-                    }
+    // 🔹 CASO 4: array direto
+    } else if (Array.isArray(dataRasp)) {
+        console.log('✅ dataRasp é array, usando direto');
+        premios = dataRasp;
+    }
 
-                    // filtra somente os do horário atual
-                    premios = premiosDistribuicao.filter(p => {
-                        return (!p.horario_inicio || p.horario_inicio <= horaAtual) &&
-                            (!p.horario_fim || p.horario_fim >= horaAtual);
-                    });
+    console.log('🎯 Prêmios considerados DISPONÍVEIS:', premios);
 
-                // 🔹 CASO 4: backend devolve array direto
-                } else if (Array.isArray(dataRasp)) {
-                    console.log('✅ dataRasp é array, usando direto');
-                    premios = dataRasp;
-                }
+    // ⚠️ AGORA SIM: hora atual definida aqui, acessível dentro do forEach
+    const horaAtualBR = new Date().toLocaleString('pt-BR');
 
-                console.log('🎯 Prêmios considerados DISPONÍVEIS:', premios);
+    premios.forEach(premio => {
+        const nome = premio.premio_nome || premio.nome || premio.nome_premio || 'Prêmio';
 
-                premios.forEach(premio => {
-                    const horaAtualBR = agora.toLocaleString('pt-BR');
-                    const nome = premio.premio_nome || premio.nome || premio.nome_premio || 'Prêmio';
+        htmlPremiosDisponiveis += `
+            <div style="padding: 10px; border-bottom: 1px solid #eee;">
+                <p style="margin: 0; font-weight: bold; color: #2196f3;">🎁 ${nome}</p>
+                <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #666;">
+                    ⏰ ${horaAtualBR}
+                </p>
+            </div>
+        `;
+        totalDisponiveis++;
+    });
 
-                    htmlPremiosDisponiveis += `
-                        <div style="padding: 10px; border-bottom: 1px solid #eee;">
-                            <p style="margin: 0; font-weight: bold; color: #2196f3;">🎁 ${nome}</p>
-                            <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #666;">
-                                ⏰ ${horaAtualBR}
-                            </p>
-                        </div>
-                    `;
-                    totalDisponiveis++;
-                });
+} catch (e) {
+    console.error('❌ Erro ao processar prêmios disponíveis:', e);
+}
 
-            } catch (e) {
-                console.error('❌ Erro ao processar prêmios disponíveis:', e);
-            }
-
-            // 💤 Se nada foi encontrado, mostra mensagem padrão
-            if (totalDisponiveis === 0) {
-                htmlPremiosDisponiveis = `
-                    <p style="color: #999; text-align: center; padding: 20px;">
-                        ⏰ Nenhum prêmio disponível neste horário
-                    </p>
-                `;
-            }
-
-            document.getElementById('lista-premios-disponiveis').innerHTML = htmlPremiosDisponiveis;
 
 
 

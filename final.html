@@ -2010,207 +2010,204 @@ function mostrarModalChancesAcabaram() {
         }
 
         // ============================================
-        // FUNÇÃO SIMPLIFICADA - Mostra apenas prêmios disponíveis (sem filtro de horário)
-        // Substitua a função carregarModalPremios() completa por esta versão
+        // CARREGAR MODAL DE PRÊMIOS
+        // MOSTRA:
+        // 1) Meus prêmios
+        // 2) Prêmios DISPONÍVEIS da raspadinha ATIVA (painel ADM)
+        // 3) Últimos ganhadores
         // ============================================
-
         async function carregarModalPremios() {
-            console.log('🔄 Iniciando carregamento do modal de prêmios...');
-            
-            // Abre o modal
+            console.log('🔄 Carregando modal de prêmios...');
+
+            // Abrir modal
             document.getElementById('modal-premios').classList.add('active');
 
-            // Coloca "Carregando..." nas três listas
+            // Loading
             document.getElementById('lista-meus-premios').innerHTML =
-                '<p style="color: #999;">Carregando...</p>';
+                '<p style="color:#999;">Carregando...</p>';
             document.getElementById('lista-premios-disponiveis').innerHTML =
-                '<p style="color: #999;">Carregando...</p>';
+                '<p style="color:#999;">Carregando...</p>';
             document.getElementById('lista-outros-ganhadores').innerHTML =
-                '<p style="color: #999;">Carregando...</p>';
+                '<p style="color:#999;">Carregando...</p>';
 
             try {
-                const meuEmail = (usuarioDados && usuarioDados.email) 
-                    ? usuarioDados.email 
-                    : localStorage.getItem('participante_email');
+                const meuEmail =
+                    usuarioDados?.email || localStorage.getItem('participante_email');
 
-                console.log('👤 Meu email:', meuEmail);
+                console.log('👤 Email do usuário:', meuEmail);
 
-                // Buscar histórico + raspadinhas agendadas ao mesmo tempo
+                // Buscar histórico + raspadinhas agendadas juntos
                 const [respHistorico, respRaspadinhas] = await Promise.all([
                     fetch(CONFIG.buildURL(CONFIG.API.HISTORICO) + '?premio_ganho=true'),
                     fetch(CONFIG.buildURL(CONFIG.API.RASPADINHAS_AGENDADAS))
                 ]);
 
-                // --------------------------
+                // =========================
                 // HISTÓRICO
-                // --------------------------
-                if (!respHistorico.ok) {
-                    throw new Error('Erro ao buscar histórico');
-                }
+                // =========================
+                if (!respHistorico.ok) throw new Error('Erro no histórico');
                 const historico = await respHistorico.json();
                 const historicoSeguro = Array.isArray(historico) ? historico : [];
 
-                console.log('📦 Histórico carregado:', historicoSeguro.length);
-
-                // --------------------------
+                // =========================
                 // RASPADINHAS AGENDADAS
-                // --------------------------
-                if (!respRaspadinhas.ok) {
-                    throw new Error('Erro ao buscar raspadinhas agendadas');
-                }
+                // =========================
+                if (!respRaspadinhas.ok) throw new Error('Erro raspadinhas');
                 const raspadinhas = await respRaspadinhas.json();
                 const raspadinhasSeguro = Array.isArray(raspadinhas) ? raspadinhas : [];
 
-                console.log('📦 Raspadinhas carregadas:', raspadinhasSeguro.length);
-
                 // =========================
-                // 1) MEUS PRÊMIOS
+                // 1️⃣ MEUS PRÊMIOS
                 // =========================
                 const meusPremios = historicoSeguro.filter(h => {
                     if (!h.premio_nome) return false;
-                    const nomeLower = h.premio_nome.toLowerCase();
-                    const naoFoi = nomeLower.includes('não foi');
-                    return h.email === meuEmail && !naoFoi;
+                    return (
+                        h.email === meuEmail &&
+                        !h.premio_nome.toLowerCase().includes('não foi')
+                    );
                 });
 
-                console.log('🏆 Meus prêmios:', meusPremios.length);
-
-                let htmlMeusPremios = '';
+                let htmlMeus = '';
                 if (meusPremios.length > 0) {
-                    meusPremios.forEach((premio, index) => {
-                        const data = new Date(premio.data_sorteio).toLocaleString('pt-BR');
-                        const tipo = premio.tipo_sorteio === 'raspadinha' ? '🎫' : '🎡';
-                        htmlMeusPremios += `
-                            <div style="padding: 10px; border-bottom: 1px solid #eee; ${index === meusPremios.length - 1 ? 'border-bottom: none;' : ''}">
-                                <p style="margin: 0; font-weight: bold; color: #4caf50;">${tipo} ${premio.premio_nome}</p>
-                                <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #666;">${data}</p>
+                    meusPremios.forEach((p, i) => {
+                        const data = new Date(p.data_sorteio).toLocaleString('pt-BR');
+                        const tipo = p.tipo_sorteio === 'raspadinha' ? '🎫' : '🎡';
+
+                        htmlMeus += `
+                            <div style="padding:10px;border-bottom:1px solid #eee;${i === meusPremios.length - 1 ? 'border:none' : ''}">
+                                <p style="margin:0;font-weight:bold;color:#4caf50;">
+                                    ${tipo} ${p.premio_nome}
+                                </p>
+                                <p style="margin:5px 0 0;font-size:.85em;color:#666;">${data}</p>
                             </div>
                         `;
                     });
                 } else {
-                    htmlMeusPremios = `
-                        <p style="color: #999; text-align: center; padding: 20px;">
-                            Você ainda não ganhou nenhum prêmio. Continue tentando! 🍀
+                    htmlMeus = `
+                        <p style="color:#999;text-align:center;padding:20px;">
+                            Você ainda não ganhou nenhum prêmio 🍀
                         </p>`;
                 }
-                document.getElementById('lista-meus-premios').innerHTML = htmlMeusPremios;
+
+                document.getElementById('lista-meus-premios').innerHTML = htmlMeus;
 
                 // =========================
-                // 2) PRÊMIOS DISPONÍVEIS (APENAS PRÊMIOS ATIVOS)
+                // 2️⃣ PRÊMIOS DISPONÍVEIS
+                // (APENAS raspadinha ATIVA agora)
                 // =========================
-                
-                console.log('🔍 Buscando prêmios ativos...');
-                
-                // Buscar TODOS os prêmios cadastrados (não apenas de raspadinhas)
-                let premiosResponse;
-                try {
-                    premiosResponse = await fetch(CONFIG.buildURL(CONFIG.API.PREMIOS));
-                    
-                    if (!premiosResponse.ok) {
-                        throw new Error('Erro ao buscar prêmios');
+                let htmlDisponiveis = '';
+                let totalDisponiveis = 0;
+
+                // Hora atual SP
+                const agora = new Date();
+                const agoraSP = new Date(
+                    agora.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' })
+                );
+
+                const dataHoje = agoraSP.toISOString().split('T')[0];
+                const horaAtual = agoraSP.toTimeString().slice(0, 5);
+                const horaNum = h => parseInt(h.replace(':', ''), 10);
+
+                // Achar raspadinha ativa
+                const raspadinhaAtiva = raspadinhasSeguro.find(r => {
+                    return (
+                        r.data_raspadinha === dataHoje &&
+                        (r.status === 'ativo' || r.status === 'pendente') &&
+                        horaNum(horaAtual) >= horaNum(r.hora_inicio) &&
+                        horaNum(horaAtual) <= horaNum(r.hora_fim)
+                    );
+                });
+
+                if (raspadinhaAtiva) {
+                    let premios = [];
+                    try {
+                        premios = JSON.parse(raspadinhaAtiva.premios_distribuicao || '[]');
+                    } catch (e) {
+                        console.error('❌ Erro no JSON de prêmios', e);
                     }
-                    
-                    const premiosData = await premiosResponse.json();
-                    console.log('📦 Resposta da API de prêmios:', premiosData);
-                    
-                    // Normalizar resposta (pode vir como array ou objeto)
-                    const todosPremios = Array.isArray(premiosData) 
-                        ? premiosData 
-                        : (premiosData.premios || []);
-                    
-                    console.log('📋 Total de prêmios encontrados:', todosPremios.length);
-                    
-                    // 🎯 FILTRAR APENAS PRÊMIOS ATIVOS
-                    const premiosAtivos = todosPremios.filter(p => {
-                        const isAtivo = p.ativo === true || p.ativo === 1;
-                        const isRaspadinha = p.tipo === 'raspadinha' || p.tipo === 'ambos';
-                        
-                        console.log(`  - ${p.nome}: ativo=${p.ativo}, tipo=${p.tipo}, incluir=${isAtivo && isRaspadinha}`);
-                        
-                        return isAtivo && isRaspadinha;
+
+                    premios.forEach(p => {
+                        if (p.ativo === false || p.status === 'inativo') return;
+
+                        htmlDisponiveis += `
+                            <div style="padding:10px;border-bottom:1px solid #eee;">
+                                <p style="margin:0;font-weight:bold;color:#2196f3;">
+                                    🎁 ${p.premio_nome || p.nome}
+                                </p>
+                                <p style="margin:5px 0 0;font-size:.85em;color:#666;">
+                                    ⏰ Das ${p.horario_inicio} às ${p.horario_fim}
+                                </p>
+                            </div>
+                        `;
+                        totalDisponiveis++;
                     });
-                    
-                    console.log('✅ Prêmios ativos de raspadinha:', premiosAtivos.length);
-                    
-                    let htmlPremiosDisponiveis = '';
-                    
-                    if (premiosAtivos.length > 0) {
-                        premiosAtivos.forEach((premio, index) => {
-                            htmlPremiosDisponiveis += `
-                                <div style="padding: 10px; border-bottom: 1px solid #eee; ${index === premiosAtivos.length - 1 ? 'border-bottom: none;' : ''}">
-                                    <p style="margin: 0; font-weight: bold; color: #2196f3;">🎁 ${premio.nome}</p>
-                                </div>
-                            `;
-                        });
-                    } else {
-                        htmlPremiosDisponiveis = `
-                            <p style="color: #999; text-align: center; padding: 20px;">
-                                Nenhum prêmio ativo no momento. 🎁
-                            </p>`;
-                    }
-                    
-                    document.getElementById('lista-premios-disponiveis').innerHTML = htmlPremiosDisponiveis;
-                    console.log('✅ Seção "Prêmios Disponíveis" atualizada');
-                    
-                } catch (error) {
-                    console.error('❌ Erro ao buscar prêmios:', error);
-                    document.getElementById('lista-premios-disponiveis').innerHTML = `
-                        <p style="color: #f44336; text-align: center; padding: 20px;">
-                            Erro ao carregar prêmios
+                }
+
+                if (!raspadinhaAtiva) {
+                    htmlDisponiveis = `
+                        <p style="color:#999;text-align:center;padding:20px;">
+                            Nenhuma raspadinha ativa agora ⏰
                         </p>`;
                 }
 
+                if (raspadinhaAtiva && totalDisponiveis === 0) {
+                    htmlDisponiveis = `
+                        <p style="color:#999;text-align:center;padding:20px;">
+                            Nenhum prêmio disponível neste horário 🎁
+                        </p>`;
+                }
+
+                document.getElementById('lista-premios-disponiveis').innerHTML = htmlDisponiveis;
+
                 // =========================
-                // 3) ÚLTIMOS GANHADORES
+                // 3️⃣ ÚLTIMOS GANHADORES
                 // =========================
-                const outrosGanhadores = historicoSeguro
+                const outros = historicoSeguro
                     .filter(h => {
                         if (!h.premio_nome) return false;
-                        const nomeLower = h.premio_nome.toLowerCase();
-                        const naoFoi = nomeLower.includes('não foi');
-                        return h.email !== meuEmail && !naoFoi;
+                        return (
+                            h.email !== meuEmail &&
+                            !h.premio_nome.toLowerCase().includes('não foi')
+                        );
                     })
                     .sort((a, b) => new Date(b.data_sorteio) - new Date(a.data_sorteio))
                     .slice(0, 3);
 
-                console.log('👥 Últimos ganhadores:', outrosGanhadores.length);
-
                 let htmlOutros = '';
-                if (outrosGanhadores.length > 0) {
-                    outrosGanhadores.forEach((g, index) => {
+                if (outros.length > 0) {
+                    outros.forEach((g, i) => {
                         const data = new Date(g.data_sorteio).toLocaleString('pt-BR');
+                        const nome = (g.nome || 'Cliente').split(' ')[0];
                         const tipo = g.tipo_sorteio === 'raspadinha' ? '🎫' : '🎡';
-                        const primeiroNome = (g.nome || '').split(' ')[0] || 'Cliente';
 
                         htmlOutros += `
-                            <div style="padding: 10px; border-bottom: 1px solid #eee; ${index === outrosGanhadores.length - 1 ? 'border-bottom: none;' : ''}">
-                                <p style="margin: 0; font-weight: bold; color: #ff9800;">
-                                    ${tipo} ${primeiroNome} ganhou: ${g.premio_nome}
+                            <div style="padding:10px;border-bottom:1px solid #eee;${i === outros.length - 1 ? 'border:none' : ''}">
+                                <p style="margin:0;font-weight:bold;color:#ff9800;">
+                                    ${tipo} ${nome} ganhou: ${g.premio_nome}
                                 </p>
-                                <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #666;">${data}</p>
+                                <p style="margin:5px 0 0;font-size:.85em;color:#666;">${data}</p>
                             </div>
                         `;
                     });
                 } else {
                     htmlOutros = `
-                        <p style="color: #999; text-align: center; padding: 20px;">
+                        <p style="color:#999;text-align:center;padding:20px;">
                             Nenhum ganhador ainda
                         </p>`;
                 }
+
                 document.getElementById('lista-outros-ganhadores').innerHTML = htmlOutros;
 
-                console.log('✅ Modal de prêmios carregado com sucesso!');
+                console.log('✅ Modal de prêmios carregado com sucesso');
 
-            } catch (error) {
-                console.error('❌ Erro ao carregar prêmios:', error);
-                document.getElementById('lista-meus-premios').innerHTML =
-                    '<p style="color: #f44336;">Erro ao carregar</p>';
-                document.getElementById('lista-premios-disponiveis').innerHTML =
-                    '<p style="color: #f44336;">Erro ao carregar</p>';
-                document.getElementById('lista-outros-ganhadores').innerHTML =
-                    '<p style="color: #f44336;">Erro ao carregar</p>';
+            } catch (err) {
+                console.error('❌ Erro ao carregar prêmios:', err);
+                document.getElementById('lista-meus-premios').innerHTML = 'Erro';
+                document.getElementById('lista-premios-disponiveis').innerHTML = 'Erro';
+                document.getElementById('lista-outros-ganhadores').innerHTML = 'Erro';
             }
         }
+
 
 
         

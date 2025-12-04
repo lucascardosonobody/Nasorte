@@ -2151,9 +2151,16 @@ async function carregarModalPremios() {
                 const inicioNum = horaParaNumero(inicioRaw);
                 const fimNum    = horaParaNumero(fimRaw);
 
-                // Sem horário definido? Considera "sempre disponível"
-                if (!inicioRaw && !fimRaw) return true;
+                // ❌ Sem horário definido? NÃO exibir como "disponível agora"
+                if (!inicioRaw && !fimRaw) {
+                    console.log('⏰ Ignorando prêmio sem horário:', p.premio_nome || p.nome || p.nome_premio);
+                    return false;
+                }
+
+                // Só fim definido
                 if (!inicioRaw) return horaAtualNum <= fimNum;
+
+                // Só início definido
                 if (!fimRaw)    return horaAtualNum >= inicioNum;
 
                 const dentro = horaAtualNum >= inicioNum && horaAtualNum <= fimNum;
@@ -2168,6 +2175,7 @@ async function carregarModalPremios() {
                 });
                 return dentro;
             });
+
 
             console.log('🎯 Prêmios após filtro por horário:', premiosNoHorario);
 

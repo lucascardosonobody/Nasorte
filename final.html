@@ -2129,21 +2129,35 @@ function mostrarModalChancesAcabaram() {
 
                     console.log('🎯 Prêmios considerados DISPONÍVEIS:', premios);
 
-                    const horaAtualBR = new Date().toLocaleString('pt-BR');
-
                     premios.forEach(premio => {
                         const nome = premio.premio_nome || premio.nome || premio.nome_premio || 'Prêmio';
+
+                        // pega os horários do objeto, cobrindo vários formatos possíveis
+                        const inicio = premio.horario_inicio || premio.hora_inicio || premio.inicio || '';
+                        const fim    = premio.horario_fim    || premio.hora_fim    || premio.fim    || '';
+
+                        let faixaHorario = '';
+                        if (inicio && fim) {
+                            faixaHorario = `⏰ Das ${inicio} às ${fim}`;
+                        } else if (inicio) {
+                            faixaHorario = `⏰ A partir de ${inicio}`;
+                        } else if (fim) {
+                            faixaHorario = `⏰ Até ${fim}`;
+                        } else {
+                            faixaHorario = '⏰ Horário não informado';
+                        }
 
                         htmlPremiosDisponiveis += `
                             <div style="padding: 10px; border-bottom: 1px solid #eee;">
                                 <p style="margin: 0; font-weight: bold; color: #2196f3;">🎁 ${nome}</p>
                                 <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #666;">
-                                    ⏰ ${horaAtualBR}
+                                    ${faixaHorario}
                                 </p>
                             </div>
                         `;
                         totalDisponiveis++;
                     });
+
 
                 } catch (e) {
                     console.error('❌ Erro ao processar prêmios disponíveis:', e);

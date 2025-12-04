@@ -2096,12 +2096,22 @@ function mostrarModalChancesAcabaram() {
 
                 let premios = [];
 
-                // 🔹 CASO 1: backend manda { premios_disponiveis_agora: [...] }
-                if (Array.isArray(dataRasp.premios_disponiveis_agora)) {
+                // 🔹 CASO 1: backend manda { premios_ativos: [...] }
+                if (Array.isArray(dataRasp.premios_ativos)) {
+                    console.log('✅ Usando dataRasp.premios_ativos');
+                    premios = dataRasp.premios_ativos;
+
+                // 🔹 CASO 1b: backend manda { raspadinha: { premios_ativos: [...] } }
+                } else if (dataRasp.raspadinha && Array.isArray(dataRasp.raspadinha.premios_ativos)) {
+                    console.log('✅ Usando dataRasp.raspadinha.premios_ativos');
+                    premios = dataRasp.raspadinha.premios_ativos;
+
+                // 🔹 CASO 2: backend manda { premios_disponiveis_agora: [...] }
+                } else if (Array.isArray(dataRasp.premios_disponiveis_agora)) {
                     console.log('✅ Usando dataRasp.premios_disponiveis_agora');
                     premios = dataRasp.premios_disponiveis_agora;
 
-                // 🔹 CASO 2: backend manda { premios_distribuicao: "json..." }
+                // 🔹 CASO 3: backend manda { premios_distribuicao: "json..." }
                 } else if (dataRasp && dataRasp.premios_distribuicao) {
                     console.log('✅ Usando dataRasp.premios_distribuicao (JSON parse)');
                     
@@ -2125,7 +2135,7 @@ function mostrarModalChancesAcabaram() {
                             (!p.horario_fim || p.horario_fim >= horaAtual);
                     });
 
-                // 🔹 CASO 3: backend devolve array direto
+                // 🔹 CASO 4: backend devolve array direto
                 } else if (Array.isArray(dataRasp)) {
                     console.log('✅ dataRasp é array, usando direto');
                     premios = dataRasp;
@@ -2134,7 +2144,7 @@ function mostrarModalChancesAcabaram() {
                 console.log('🎯 Prêmios considerados DISPONÍVEIS:', premios);
 
                 premios.forEach(premio => {
-                    const nome = premio.premio_nome || premio.nome || 'Prêmio';
+                    const nome = premio.premio_nome || premio.nome || premio.nome_premio || 'Prêmio';
                     const inicio = premio.horario_inicio || '--:--';
                     const fim = premio.horario_fim || '--:--';
 
@@ -2163,6 +2173,7 @@ function mostrarModalChancesAcabaram() {
             }
 
             document.getElementById('lista-premios-disponiveis').innerHTML = htmlPremiosDisponiveis;
+
 
 
             

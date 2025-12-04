@@ -2092,72 +2092,70 @@ function mostrarModalChancesAcabaram() {
                 document.getElementById('lista-meus-premios').innerHTML = htmlMeus;
 
                 // =========================
-                // 2️⃣ PRÊMIOS DISPONÍVEIS
-                // (APENAS raspadinha ATIVA agora)
-                // =========================
-                let htmlDisponiveis = '';
-                let totalDisponiveis = 0;
+// 2️⃣ PRÊMIOS DISPONÍVEIS
+// (APENAS raspadinha ATIVA agora, mas sem travar em data/hora)
+// =========================
+let htmlDisponiveis = '';
+let totalDisponiveis = 0;
 
-                // Hora atual SP
-                const agora = new Date();
-                const agoraSP = new Date(
-                    agora.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' })
-                );
+// Em vez de filtrar por data + hora, vamos só pegar a raspadinha "em uso"
+let raspadinhaAtiva = null;
 
-                const dataHoje = agoraSP.toISOString().split('T')[0];
-                const horaAtual = agoraSP.toTimeString().slice(0, 5);
-                const horaNum = h => parseInt(h.replace(':', ''), 10);
+if (raspadinhasSeguro.length > 0) {
+    // 1ª tentativa: status ativo/pendente (case-insensitive)
+    raspadinhaAtiva =
+        raspadinhasSeguro.find(r => {
+            const status = (r.status || '').toLowerCase();
+            return status === 'ativo' || status === 'pendente';
+        }) 
+        // 2ª tentativa: se não achar nenhuma, pega a primeira da lista
+        || raspadinhasSeguro[0];
+}
 
-                // Achar raspadinha ativa
-                const raspadinhaAtiva = raspadinhasSeguro.find(r => {
-                    return (
-                        r.data_raspadinha === dataHoje &&
-                        (r.status === 'ativo' || r.status === 'pendente') &&
-                        horaNum(horaAtual) >= horaNum(r.hora_inicio) &&
-                        horaNum(horaAtual) <= horaNum(r.hora_fim)
-                    );
-                });
+if (raspadinhaAtiva) {
+    let premios = [];
+    try {
+        premios = JSON.parse(raspadinhaAtiva.premios_distribuicao || '[]');
+    } catch (e) {
+        console.error('❌ Erro no JSON de prêmios', e);
+    }
 
-                if (raspadinhaAtiva) {
-                    let premios = [];
-                    try {
-                        premios = JSON.parse(raspadinhaAtiva.premios_distribuicao || '[]');
-                    } catch (e) {
-                        console.error('❌ Erro no JSON de prêmios', e);
-                    }
+    premios.forEach(p => {
+        // Se o prêmio tiver flag de inativo, pula
+        if (p.ativo === false || p.status === 'inativo') return;
 
-                    premios.forEach(p => {
-                        if (p.ativo === false || p.status === 'inativo') return;
-
-                        htmlDisponiveis += `
-                            <div style="padding:10px;border-bottom:1px solid #eee;">
-                                <p style="margin:0;font-weight:bold;color:#2196f3;">
-                                    🎁 ${p.premio_nome || p.nome}
-                                </p>
-                                <p style="margin:5px 0 0;font-size:.85em;color:#666;">
-                                    ⏰ Das ${p.horario_inicio} às ${p.horario_fim}
-                                </p>
-                            </div>
-                        `;
-                        totalDisponiveis++;
-                    });
+        htmlDisponiveis += `
+            <div style="padding:10px;border-bottom:1px solid #eee;">
+                <p style="margin:0;font-weight:bold;color:#2196f3;">
+                    🎁 ${p.premio_nome || p.nome}
+                </p>
+                ${
+                    p.horario_inicio && p.horario_fim
+                        ? `<p style="margin:5px 0 0;font-size:.85em;color:#666;">
+                            ⏰ Das ${p.horario_inicio} às ${p.horario_fim}
+                           </p>`
+                        : ''
                 }
+            </div>
+        `;
+        totalDisponiveis++;
+    });
+}
 
-                if (!raspadinhaAtiva) {
-                    htmlDisponiveis = `
-                        <p style="color:#999;text-align:center;padding:20px;">
-                            Nenhuma raspadinha ativa agora ⏰
-                        </p>`;
-                }
+if (!raspadinhaAtiva) {
+    htmlDisponiveis = `
+        <p style="color:#999;text-align:center;padding:20px;">
+            Nenhuma raspadinha cadastrada para exibir prêmios ⏰
+        </p>`;
+} else if (raspadinhaAtiva && totalDisponiveis === 0) {
+    htmlDisponiveis = `
+        <p style="color:#999;text-align:center;padding:20px;">
+            Nenhum prêmio ativo configurado nesta raspadinha 🎁
+        </p>`;
+}
 
-                if (raspadinhaAtiva && totalDisponiveis === 0) {
-                    htmlDisponiveis = `
-                        <p style="color:#999;text-align:center;padding:20px;">
-                            Nenhum prêmio disponível neste horário 🎁
-                        </p>`;
-                }
+document.getElementById('lista-premios-disponiveis').innerHTML = htmlDisponiveis;
 
-                document.getElementById('lista-premios-disponiveis').innerHTML = htmlDisponiveis;
 
                 // =========================
                 // 3️⃣ ÚLTIMOS GANHADORES

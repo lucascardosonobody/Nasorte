@@ -2144,15 +2144,14 @@ function mostrarModalChancesAcabaram() {
                 console.log('🎯 Prêmios considerados DISPONÍVEIS:', premios);
 
                 premios.forEach(premio => {
+                    const horaAtualBR = agora.toLocaleString('pt-BR');
                     const nome = premio.premio_nome || premio.nome || premio.nome_premio || 'Prêmio';
-                    const inicio = premio.horario_inicio || '--:--';
-                    const fim = premio.horario_fim || '--:--';
 
                     htmlPremiosDisponiveis += `
                         <div style="padding: 10px; border-bottom: 1px solid #eee;">
                             <p style="margin: 0; font-weight: bold; color: #2196f3;">🎁 ${nome}</p>
                             <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #666;">
-                                ⏰ ${data}
+                                ⏰ ${horaAtualBR}
                             </p>
                         </div>
                     `;

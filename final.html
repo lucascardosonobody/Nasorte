@@ -1795,141 +1795,189 @@ function mostrarModalChancesAcabaram() {
         if (msg.action === 'abrirPremiacoes') {
             const modalContent = document.querySelector('#modal-premiacoes .modal-content');
     
-        // Mostrar loading
-        const loadingHTML = `
-            <h2 style="color: #DC143C;">🎁 PREMIAÇÕES</h2>
-            <div style="text-align: center; padding: 40px;">
-                <p style="color: #666;">Carregando prêmios...</p>
-            </div>
-            <button class="btn-fechar" onclick="fecharModal('modal-premiacoes')">FECHAR</button>
-        `;
-        modalContent.innerHTML = loadingHTML;
-        document.getElementById('modal-premiacoes').classList.add('active');
-        
-        // 🎯 BUSCAR PRÊMIOS AGENDADOS DA API
-            fetch(CONFIG.buildURL(CONFIG.API.RASPADINHAS_AGENDADAS))
-                .then(response => {
-                if (!response.ok) throw new Error('Erro ao buscar raspadinhas');
-                return response.json();
-            })
-            .then(raspadinhas => {
-                // ⏰ PEGAR DATA E HORA ATUAL
-                const agora = new Date();
-                const agoraEmSP = new Date(agora.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+                // Mostrar loading
+                const loadingHTML = `
+                    <h2 style="color: #DC143C;">🎁 PREMIAÇÕES</h2>
+                    <div style="text-align: center; padding: 40px;">
+                        <p style="color: #666;">Carregando prêmios...</p>
+                    </div>
+                    <button class="btn-fechar" onclick="fecharModal('modal-premiacoes')">FECHAR</button>
+                `;
+                modalContent.innerHTML = loadingHTML;
+                document.getElementById('modal-premiacoes').classList.add('active');
                 
-                const ano = agoraEmSP.getFullYear();
-                const mes = String(agoraEmSP.getMonth() + 1).padStart(2, '0');
-                const dia = String(agoraEmSP.getDate()).padStart(2, '0');
-                const dataHoje = `${ano}-${mes}-${dia}`;
-                
-                const horaAtual = String(agoraEmSP.getHours()).padStart(2, '0') + ':' + 
-                                String(agoraEmSP.getMinutes()).padStart(2, '0');
-                
-                // 🔍 FILTRAR RASPADINHAS ATIVAS
-                const raspadinhasAtivas = raspadinhasSeguro.filter(r => {
-                    return r.data_raspadinha === dataHoje && 
-                        (r.status === 'pendente' || r.status === 'ativo') &&
-                        r.hora_inicio <= horaAtual && r.hora_fim >= horaAtual;
-                });
-                
-                let premiosHTML = '';
-                let totalPremios = 0;
-                
-                if (raspadinhasAtivas.length > 0) {
-                    // 🆕 PROCESSAR TODAS AS RASPADINHAS ATIVAS
-                    raspadinhasAtivas.forEach(raspadinha => {
-                        let premiosDistribuicao = [];
-                        try {
-                            premiosDistribuicao = JSON.parse(raspadinha.premios_distribuicao || '[]');
-                        } catch (e) {
-                            console.error('Erro ao fazer parse:', e);
-                            return;
-                        }
+                // 🎯 BUSCAR PRÊMIOS AGENDADOS DA API
+                    fetch(CONFIG.buildURL(CONFIG.API.RASPADINHAS_AGENDADAS))
+                        .then(response => {
+                        if (!response.ok) throw new Error('Erro ao buscar raspadinhas');
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('📦 Dados brutos recebidos:', data);
                         
-                        // Filtrar prêmios ativos por horário
-                        const premiosAtivos = premiosDistribuicao.filter(p => {
-                            return p.horario_inicio <= horaAtual && p.horario_fim >= horaAtual;
+                        // 🔧 NORMALIZAR: pode vir como array direto ou como { raspadinhas: [...] }
+                        const raspadinhasSeguro = Array.isArray(data) ? data : (data.raspadinhas || []);
+                        
+                        console.log('📋 Raspadinhas normalizadas:', raspadinhasSeguro);
+                        
+                        // ⏰ PEGAR DATA E HORA ATUAL
+                        const agora = new Date();
+                        const agoraEmSP = new Date(agora.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+                        
+                        const ano = agoraEmSP.getFullYear();
+                        const mes = String(agoraEmSP.getMonth() + 1).padStart(2, '0');
+                        const dia = String(agoraEmSP.getDate()).padStart(2, '0');
+                        const dataHoje = `${ano}-${mes}-${dia}`;
+                        
+                        const horaAtual = String(agoraEmSP.getHours()).padStart(2, '0') + ':' + 
+                                        String(agoraEmSP.getMinutes()).padStart(2, '0');
+                        
+                        console.log('📅 Data/Hora atual:', { dataHoje, horaAtual });
+                        
+                        // 🔍 FILTRAR RASPADINHAS ATIVAS
+                        const raspadinhasAtivas = raspadinhasSeguro.filter(r => {
+                            const dataRasp = (r.data_raspadinha || '').substring(0, 10); // pegar só yyyy-mm-dd
+                            const statusOk = r.status === 'pendente' || r.status === 'ativo';
+                            const horaInicio = (r.hora_inicio || '').substring(0, 5); // HH:MM
+                            const horaFim = (r.hora_fim || '').substring(0, 5);
+                            
+                            const mesmaData = dataRasp === dataHoje;
+                            const dentroHorario = horaInicio <= horaAtual && horaAtual <= horaFim;
+                            
+                            console.log(`  Raspadinha #${r.id}:`, { 
+                                dataRasp, 
+                                dataHoje, 
+                                mesmaData, 
+                                statusOk, 
+                                horaInicio, 
+                                horaFim, 
+                                horaAtual,
+                                dentroHorario,
+                                ativa: mesmaData && statusOk && dentroHorario
+                            });
+                            
+                            return mesmaData && statusOk && dentroHorario;
                         });
                         
-                        // 🎁 ADICIONAR CADA PRÊMIO AO HTML
-                        premiosAtivos.forEach((premio, index) => {
-                            const cores = [
-                                'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                                'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                                'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-                                'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-                                'linear-gradient(135deg, #30cfd0 0%, #330867 100%)'
-                            ];
-                            const cor = cores[totalPremios % cores.length];
+                        console.log('✅ Raspadinhas ativas encontradas:', raspadinhasAtivas.length);
+                        
+                        let premiosHTML = '';
+                        let totalPremios = 0;
+                        
+                        if (raspadinhasAtivas.length > 0) {
+                            // 🆕 PROCESSAR TODAS AS RASPADINHAS ATIVAS
+                            raspadinhasAtivas.forEach(raspadinha => {
+                                console.log(`  🎰 Processando raspadinha #${raspadinha.id}`);
+                                
+                                let premiosDistribuicao = [];
+                                try {
+                                    // 🔧 Aceitar tanto string JSON quanto array
+                                    if (Array.isArray(raspadinha.premios_distribuicao)) {
+                                        premiosDistribuicao = raspadinha.premios_distribuicao;
+                                    } else {
+                                        premiosDistribuicao = JSON.parse(raspadinha.premios_distribuicao || '[]');
+                                    }
+                                    
+                                    console.log(`    📦 Prêmios encontrados:`, premiosDistribuicao);
+                                } catch (e) {
+                                    console.error('    ❌ Erro ao fazer parse:', e);
+                                    return;
+                                }
+                                
+                                // Filtrar prêmios ativos por horário
+                                const premiosAtivos = premiosDistribuicao.filter(p => {
+                                    const hInicio = (p.horario_inicio || '').substring(0, 5);
+                                    const hFim = (p.horario_fim || '').substring(0, 5);
+                                    const ativo = hInicio <= horaAtual && horaAtual <= hFim;
+                                    
+                                    console.log(`      🎁 ${p.premio_nome}:`, { hInicio, hFim, horaAtual, ativo });
+                                    
+                                    return ativo;
+                                });
+                                
+                                console.log(`    ✅ Prêmios ativos agora:`, premiosAtivos.length);
+                                
+                                // 🎁 ADICIONAR CADA PRÊMIO AO HTML
+                                premiosAtivos.forEach((premio) => {
+                                    const cores = [
+                                        'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                        'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                                        'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                                        'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                                        'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                                        'linear-gradient(135deg, #30cfd0 0%, #330867 100%)'
+                                    ];
+                                    const cor = cores[totalPremios % cores.length];
+                                    
+                                    premiosHTML += `
+                                        <div style="background: ${cor}; padding: 20px; border-radius: 15px; margin-bottom: 15px; color: white;">
+                                            <h4 style="font-size: 1.5em; margin-bottom: 10px;">🎉 ${premio.premio_nome}</h4>
+                                            <p style="opacity: 0.9; font-size: 0.95em;">⏰ Disponível das ${premio.horario_inicio} até ${premio.horario_fim}</p>
+                                        </div>
+                                    `;
+                                    totalPremios++;
+                                });
+                            });
                             
-                            premiosHTML += `
-                                <div style="background: ${cor}; padding: 20px; border-radius: 15px; margin-bottom: 15px; color: white;">
-                                    <h4 style="font-size: 1.5em; margin-bottom: 10px;">🎉 ${premio.premio_nome}</h4>
-                                    <p style="opacity: 0.9; font-size: 0.95em;">⏰ Disponível das ${premio.horario_inicio} até ${premio.horario_fim}</p>
+                            console.log('📊 Total de prêmios renderizados:', totalPremios);
+                            
+                            if (totalPremios === 0) {
+                                premiosHTML = `
+                                    <div style="background: #fff3e0; padding: 20px; border-radius: 15px; margin-bottom: 15px;">
+                                        <p style="color: #f57c00; font-size: 1.1em;">⏰ Nenhum prêmio disponível neste horário</p>
+                                    </div>
+                                `;
+                            }
+                        } else {
+                            premiosHTML = `
+                                <div style="background: #fff3e0; padding: 20px; border-radius: 15px; margin-bottom: 15px;">
+                                    <p style="color: #f57c00; font-size: 1.1em;">⏰ Nenhuma raspadinha agendada no momento</p>
                                 </div>
                             `;
-                            totalPremios++;
-                        });
-                    });
-                    
-                    if (totalPremios === 0) {
-                        premiosHTML = `
-                            <div style="background: #fff3e0; padding: 20px; border-radius: 15px; margin-bottom: 15px;">
-                                <p style="color: #f57c00; font-size: 1.1em;">⏰ Nenhum prêmio disponível neste horário</p>
+                        }
+                        
+                        // Montar o HTML completo do modal
+                        const htmlCompleto = `
+                            <h2 style="color: #DC143C;">🎁 PREMIAÇÕES</h2>
+                            
+                            <div style="text-align: left; margin: 20px 0;">
+                                <h3 style="color: #4caf50; margin-bottom: 20px; text-align: center;">
+                                    ${totalPremios > 0 ? `Confira ${totalPremios} prêmio${totalPremios !== 1 ? 's' : ''} disponível${totalPremios !== 1 ? 'is' : ''} agora:` : 'Veja as premiações:'}
+                                </h3>
+                                
+                                ${premiosHTML}
+                                
+                                <div style="background: #f5f5f5; padding: 20px; border-radius: 15px; margin-top: 25px; text-align: center;">
+                                    <p style="font-size: 1.1em; color: #333; margin-bottom: 10px;">
+                                        <strong>🎡 BÔNUS:</strong>
+                                    </p>
+                                    <p style="color: #666;">
+                                        Ao fazer login, você automaticamente participa da <strong style="color: #DC143C;">ROLETA DA SORTE</strong> com prêmios exclusivos!
+                                    </p>
+                                </div>
                             </div>
+                            
+                            <button class="btn-fechar" onclick="fecharModal('modal-premiacoes')">FECHAR</button>
                         `;
-                    }
-                } else {
-                    premiosHTML = `
-                        <div style="background: #fff3e0; padding: 20px; border-radius: 15px; margin-bottom: 15px;">
-                            <p style="color: #f57c00; font-size: 1.1em;">⏰ Nenhuma raspadinha agendada no momento</p>
-                        </div>
-                    `;
-                }
-                
-                // Montar o HTML completo do modal
-                const htmlCompleto = `
-                    <h2 style="color: #DC143C;">🎁 PREMIAÇÕES</h2>
-                    
-                    <div style="text-align: left; margin: 20px 0;">
-                        <h3 style="color: #4caf50; margin-bottom: 20px; text-align: center;">
-                            ${totalPremios > 0 ? `Confira ${totalPremios} prêmio${totalPremios !== 1 ? 's' : ''} disponível${totalPremios !== 1 ? 'is' : ''} agora:` : 'Veja as premiações:'}
-                        </h3>
                         
-                        ${premiosHTML}
+                        modalContent.innerHTML = htmlCompleto;
+                    })
+                    .catch(error => {
+                        console.error('❌ Erro ao buscar prêmios:', error);
                         
-                        <div style="background: #f5f5f5; padding: 20px; border-radius: 15px; margin-top: 25px; text-align: center;">
-                            <p style="font-size: 1.1em; color: #333; margin-bottom: 10px;">
-                                <strong>🎡 BÔNUS:</strong>
-                            </p>
-                            <p style="color: #666;">
-                                Ao fazer login, você automaticamente participa da <strong style="color: #DC143C;">ROLETA DA SORTE</strong> com prêmios exclusivos!
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <button class="btn-fechar" onclick="fecharModal('modal-premiacoes')">FECHAR</button>
-                `;
+                        const erroHTML = `
+                            <h2 style="color: #DC143C;">🎁 PREMIAÇÕES</h2>
+                            <div style="background: #ffebee; padding: 20px; border-radius: 10px; text-align: center; margin: 20px 0;">
+                                <p style="color: #c62828; font-weight: bold; margin-bottom: 10px;">❌ Erro ao carregar prêmios</p>
+                                <p style="color: #666; font-size: 0.9em;">Tente novamente em alguns instantes</p>
+                            </div>
+                            <button class="btn-fechar" onclick="fecharModal('modal-premiacoes')">FECHAR</button>
+                        `;
+                        modalContent.innerHTML = erroHTML;
+                    });
                 
-                modalContent.innerHTML = htmlCompleto;
-            })
-            .catch(error => {
-                console.error('❌ Erro ao buscar prêmios:', error);
-                
-                const erroHTML = `
-                    <h2 style="color: #DC143C;">🎁 PREMIAÇÕES</h2>
-                    <div style="background: #ffebee; padding: 20px; border-radius: 10px; text-align: center; margin: 20px 0;">
-                        <p style="color: #c62828; font-weight: bold; margin-bottom: 10px;">❌ Erro ao carregar prêmios</p>
-                        <p style="color: #666; font-size: 0.9em;">Tente novamente em alguns instantes</p>
-                    </div>
-                    <button class="btn-fechar" onclick="fecharModal('modal-premiacoes')">FECHAR</button>
-                `;
-                modalContent.innerHTML = erroHTML;
-            });
-        
-        return;
-    }
+                return;
+            }
             }
         , false);
 

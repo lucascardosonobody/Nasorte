@@ -2231,7 +2231,7 @@ function mostrarModalChancesAcabaram() {
                         premios = [];
                     }
 
-                    // 🔥 FILTRAR SOMENTE PRÊMIOS ATIVOS (sem olhar horário)
+                    // 🔥 FILTRAR SOMENTE PRÊMIOS ATIVOS
                     const premiosAtivos = premios.filter(p => {
                         const status = (p.status || '').toString().toLowerCase();
                         const flagAtivo =
@@ -2275,6 +2275,23 @@ function mostrarModalChancesAcabaram() {
                         totalDisponiveis++;
                     });
                 }
+
+                // 🧩 Exibição final
+                if (!raspadinhaAtiva) {
+                    htmlDisponiveis = `
+                        <p style="color:#999;text-align:center;padding:20px;">
+                            Nenhuma raspadinha ativa agora ⏰
+                        </p>`;
+                } else if (raspadinhaAtiva && totalDisponiveis === 0) {
+                    htmlDisponiveis = `
+                        <p style="color:#999;text-align:center;padding:20px;">
+                            Nenhum prêmio ativo neste horário 🎁
+                        </p>`;
+                }
+
+                document.getElementById('lista-premios-disponiveis').innerHTML =
+                    htmlDisponiveis;
+
 
 
 

@@ -2212,20 +2212,49 @@ function mostrarModalChancesAcabaram() {
 
                 if (raspadinhaAtiva) {
                     let premios = [];
+
                     try {
-                        premios = JSON.parse(raspadinhaAtiva.premios_distribuicao || '[]');
+                        const bruto = raspadinhaAtiva.premios_distribuicao;
+                        console.log('🧩 premios_distribuicao bruto:', bruto, 'tipo:', typeof bruto);
+
+                        if (Array.isArray(bruto)) {
+                            // Já é array vindo do backend
+                            premios = bruto;
+                        } else if (typeof bruto === 'string' && bruto.trim() !== '') {
+                            // Vem como string JSON
+                            premios = JSON.parse(bruto);
+                        } else {
+                            premios = [];
+                        }
                     } catch (e) {
-                        console.error('❌ Erro no JSON de prêmios', e);
+                        console.error('❌ Erro ao interpretar premios_distribuicao:', e);
                         premios = [];
                     }
 
                     // 🔥 FILTRAR SOMENTE PRÊMIOS ATIVOS (sem olhar horário)
                     const premiosAtivos = premios.filter(p => {
-                        const ativo = p.ativo === true || p.status === 'ativo' || p.status === 'ATIVO';
-                        return ativo;
+                        const status = (p.status || '').toString().toLowerCase();
+                        const flagAtivo =
+                            p.ativo === true ||
+                            p.ativo === 1 ||
+                            p.ativo === '1' ||
+                            p.ativo === 'true' ||
+                            p.ativo === 'on' ||
+                            p.ativo === 'ATIVO';
+
+                        const ehAtivo = flagAtivo || status === 'ativo';
+
+                        console.log('🔎 Checando prêmio:', {
+                            premio_nome: p.premio_nome || p.nome,
+                            status: p.status,
+                            ativo: p.ativo,
+                            ehAtivo
+                        });
+
+                        return ehAtivo;
                     });
 
-                    console.log("🎯 Prêmios ATIVOS encontrados:", premiosAtivos);
+                    console.log('🎯 Prêmios ATIVOS encontrados:', premiosAtivos);
 
                     premiosAtivos.forEach(p => {
                         htmlDisponiveis += `
@@ -2246,6 +2275,7 @@ function mostrarModalChancesAcabaram() {
                         totalDisponiveis++;
                     });
                 }
+
 
 
                 if (!raspadinhaAtiva) {

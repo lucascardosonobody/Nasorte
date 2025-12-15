@@ -2211,60 +2211,42 @@ function mostrarModalChancesAcabaram() {
                 });
 
                 if (raspadinhaAtiva) {
-                    console.log('✅ Raspadinha ATIVA AGORA encontrada:', raspadinhaAtiva.id);
-
-                    // Normalizar premios_distribuicao (array OU string)
                     let premios = [];
                     try {
-                        if (Array.isArray(raspadinhaAtiva.premios_distribuicao)) {
-                            premios = raspadinhaAtiva.premios_distribuicao;
-                        } else {
-                            premios = JSON.parse(
-                                raspadinhaAtiva.premios_distribuicao || '[]'
-                            );
-                        }
+                        premios = JSON.parse(raspadinhaAtiva.premios_distribuicao || '[]');
                     } catch (e) {
-                        console.error('❌ Erro no JSON de prêmios da raspadinha ativa', e);
+                        console.error('❌ Erro no JSON de prêmios', e);
                         premios = [];
                     }
 
-                    const horaAtualNum = horaParaNumero(horaAtualBR);
+                    // 🔥 FILTRAR SOMENTE PRÊMIOS ATIVOS (sem olhar horário)
+                    const premiosAtivos = premios.filter(p => {
+                        const ativo = p.ativo === true || p.status === 'ativo' || p.status === 'ATIVO';
+                        return ativo;
+                    });
 
-                    premios.forEach(p => {
-                        // Ignora prêmios marcados como inativos
-                        if (p.ativo === false || p.status === 'inativo') return;
+                    console.log("🎯 Prêmios ATIVOS encontrados:", premiosAtivos);
 
-                        const hInicio = horaParaNumero(p.horario_inicio || '00:00');
-                        const hFim = horaParaNumero(p.horario_fim || '23:59');
-
-                        const premioAtivoNoHorario =
-                            horaAtualNum >= hInicio && horaAtualNum <= hFim;
-
-                        // Se quiser SÓ os que estão válidos no horário agora:
-                        if (!premioAtivoNoHorario) return;
-
+                    premiosAtivos.forEach(p => {
                         htmlDisponiveis += `
                             <div style="padding:10px;border-bottom:1px solid #eee;">
                                 <p style="margin:0;font-weight:bold;color:#2196f3;">
                                     🎁 ${p.premio_nome || p.nome}
-                                    <span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:8px;font-size:11px;margin-left:6px;">
-                                        🔵 ATIVO AGORA
-                                    </span>
                                 </p>
+
                                 ${
                                     p.horario_inicio && p.horario_fim
                                         ? `<p style="margin:5px 0 0;font-size:.85em;color:#666;">
-                                                ⏰ Das ${normalizarHora(
-                                                    p.horario_inicio
-                                                )} às ${normalizarHora(p.horario_fim)}
+                                            ⏰ Das ${p.horario_inicio} às ${p.horario_fim}
                                         </p>`
-                                        : ''
+                                        : '<p style="margin:5px 0 0;font-size:.85em;color:#666;">⏰ Sem horário definido</p>'
                                 }
                             </div>
                         `;
                         totalDisponiveis++;
                     });
                 }
+
 
                 if (!raspadinhaAtiva) {
                     htmlDisponiveis = `

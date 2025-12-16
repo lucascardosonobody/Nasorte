@@ -2243,7 +2243,7 @@ function mostrarModalChancesAcabaram() {
                     return ativoFlag || status === 'ativo';
                 };
 
-                // ✅ FUNÇÃO: está no horário do prêmio?
+                // ✅ FUNÇÃO: está no horário do prêmio? (SUPORTA VIRAR O DIA)
                 const premioNoHorario = (p) => {
                     const hInicio = normalizarHora(p.horario_inicio);
                     const hFim = normalizarHora(p.horario_fim);
@@ -2254,8 +2254,15 @@ function mostrarModalChancesAcabaram() {
                     const hInicioNum = horaParaNumero(hInicio);
                     const hFimNum = horaParaNumero(hFim);
 
-                    return horaAtualNum >= hInicioNum && horaAtualNum <= hFimNum;
+                    // ✅ horário normal (ex: 09:00 -> 18:00)
+                    if (hFimNum >= hInicioNum) {
+                        return horaAtualNum >= hInicioNum && horaAtualNum <= hFimNum;
+                    }
+
+                    // ✅ horário “vira o dia” (ex: 22:00 -> 02:00)
+                    return (horaAtualNum >= hInicioNum) || (horaAtualNum <= hFimNum);
                 };
+
 
                 // 🔥 FILTRAR SOMENTE PRÊMIOS ATIVOS + NO HORÁRIO
                 const premiosDisponiveisAgora = premiosAgregados.filter(p => premioEhAtivo(p) && premioNoHorario(p));

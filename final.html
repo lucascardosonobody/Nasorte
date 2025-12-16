@@ -2170,23 +2170,32 @@ function mostrarModalChancesAcabaram() {
 
                 // ✅ PEGAR TODAS AS RASPADINHAS ATIVAS AGORA (não só 1)
                 const raspadinhasAtivasAgora = raspadinhasSeguro.filter(r => {
-                    const dataRaspISO = (r.data_raspadinha || '').substring(0, 10);
-                    const statusRaw = (r.status || '').toLowerCase();
+                const dataRaspISO = (r.data_raspadinha || '').substring(0, 10);
+                const statusRaw = (r.status || '').toLowerCase();
 
-                    // cancelado/realizado não entra
-                    if (statusRaw === 'cancelado' || statusRaw === 'realizado') return false;
+                // só descarta as claramente inválidas
+                if (statusRaw === 'cancelado' || statusRaw === 'realizado') return false;
 
-                    const horaInicio = normalizarHora(r.hora_inicio);
-                    const horaFim = normalizarHora(r.hora_fim);
+                const mesmaData = dataRaspISO === dataHojeBR;
 
-                    const horaInicioNum = horaParaNumero(horaInicio);
-                    const horaFimNum = horaParaNumero(horaFim);
+                const horaInicio = normalizarHora(r.hora_inicio);
+                const horaFim = normalizarHora(r.hora_fim);
 
-                    const mesmaData = dataRaspISO === dataHojeBR;
-                    const dentroHorario = horaAtualNum >= horaInicioNum && horaAtualNum <= horaFimNum;
+                // ✅ se não tiver horário definido, considera ativa pela data
+                if (!horaInicio || !horaFim) return mesmaData;
 
-                    return mesmaData && dentroHorario;
+                const horaInicioNum = horaParaNumero(horaInicio);
+                const horaFimNum = horaParaNumero(horaFim);
+
+                // ✅ horário normal (ex: 09:00 -> 18:00)
+                if (horaFimNum >= horaInicioNum) {
+                    return mesmaData && horaAtualNum >= horaInicioNum && horaAtualNum <= horaFimNum;
+                }
+
+                // ✅ horário “vira o dia” (ex: 22:00 -> 02:00)
+                return mesmaData && (horaAtualNum >= horaInicioNum || horaAtualNum <= horaFimNum);
                 });
+
 
                 console.log('✅ Raspadinhas ativas agora:', raspadinhasAtivasAgora.map(r => r.id));
 

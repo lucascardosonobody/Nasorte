@@ -1041,6 +1041,8 @@ ARQUIVO 3: paineladm.html - Painel Administrativo Completo
             let sorteioAutomaticoAtivo = false;
             let intervalVerificacao = null;
             let roletaWindow = null;
+            let raspadinhaAutomaticaAtiva = false;
+            let intervalVerificacaoRaspadinha = null;
 
             // =====================================================
             // CONTROLE DE UI DO PAINEL DE SORTEIO AUTOMÁTICO
@@ -1424,6 +1426,44 @@ ARQUIVO 3: paineladm.html - Painel Administrativo Completo
                     }, '*');
                 }
             }
+
+            async function abrirRaspadinha() {
+                console.log('🎰 Enviando comando de raspadinha para o BACKEND...');
+
+                const comandoRasp = {
+                    tipo: 'INICIAR_RASPADINHA',
+                    acao: 'raspar',
+                    timestamp: Date.now()
+                };
+
+                try {
+                    const resp = await fetch(CONFIG.buildURL(CONFIG.API.ENVIAR_COMANDO), {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(comandoRasp)
+                    });
+
+                    if (!resp.ok) {
+                        const txt = await resp.text();
+                        console.error('❌ Erro ao enviar comando raspadinha:', resp.status, txt);
+                        mostrarNotificacao('❌ Erro ao enviar comando da raspadinha', 'error');
+                        return;
+                    }
+
+                    const data = await resp.json().catch(() => ({}));
+                    console.log('✅ Comando raspadinha enviado (backend):', data);
+
+                    mostrarNotificacao('🎰 Comando de raspadinha enviado para a Página Pública!', 'success');
+                } catch (err) {
+                    console.error('❌ Falha na requisição:', err);
+                    mostrarNotificacao('❌ Falha ao enviar comando da raspadinha', 'error');
+                }
+            }
+
+
 
             // =============================================
             // ✅ FUNÇÃO FALTANTE — CONFIGURAÇÃO DE SORTEIO

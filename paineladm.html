@@ -1509,14 +1509,39 @@ ARQUIVO 3: paineladm.html - Painel Administrativo Completo
 
         // Carregar participantes
             function carregarParticipantes() {
+                console.log('🔄 Carregando participantes...');
+
                 CONFIG.fetch(CONFIG.API.PARTICIPANTES)
-                    .then(data => {
-                        participantes = data || [];
+                    .then((response) => {
+                        console.log('📦 Resposta bruta participantes:', response);
+
+                        // ✅ NORMALIZAÇÃO (IGUAL PRÊMIOS)
+                        if (Array.isArray(response)) {
+                            participantes = response;
+                        } else if (response && Array.isArray(response.participantes)) {
+                            participantes = response.participantes;
+                        } else {
+                            participantes = [];
+                        }
+
+                        console.log('✅ Participantes normalizados:', participantes);
+
                         renderizarParticipantes();
                         atualizarStats();
                     })
-                    .catch(erro => {
-                        console.error('Erro ao carregar participantes:', erro);
+                    .catch((erro) => {
+                        console.error('❌ Erro ao carregar participantes:', erro);
+
+                        const tbody = document.getElementById('tabela-participantes');
+                        if (tbody) {
+                            tbody.innerHTML = `
+                                <tr>
+                                    <td colspan="5" style="text-align:center;color:red;">
+                                        Erro ao carregar participantes
+                                    </td>
+                                </tr>
+                            `;
+                        }
                     });
             }
 
